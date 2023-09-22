@@ -1,6 +1,49 @@
-# Logs
-logs
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Flask specific
+instance/
+.webassets-cache
+
+# SQLite database file (if used)
+*.sqlite
+
+# Environment/configuration files
+.env
+.venv/
+venv/
+ENV/
+
+# PyCharm and other IDEs
+.idea/
+*.swp
+*.swo
+*.swn
 *.log
+
+# MacOS
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# If you are using the session-based storage, you can ignore session-based storage
+# Usually, it's a good idea to keep your session data out of version control.
+flask_session/
+
+# Temporary files
+*.tmp
+
+# Databases
+*.db
+
+# VS Code
+.vscode/
+
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

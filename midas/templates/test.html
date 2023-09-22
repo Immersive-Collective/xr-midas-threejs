@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Depth Map Result</title>
+
+    <style type="text/css">
+    .im {
+        max-width: 33%;
+        height: 200px;
+
+    }        
+    </style>
+
+
+
+</head>
+<body>
+
+
+<img class="im" src="cat.jpg" alt="Original Image"/>
+
+<img class="im" src="depth.jpg" alt="Depth Image"/>
+
+
+
+
+
+<div id="terrain" style="width: 400px; height: 400px;"></div>
+
+
+
+
+
+<script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+
+<script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.156/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.156/examples/jsm/"
+    }
+  }
+</script>
+
+
+
+<script type="module">
+
+
+import * as THREE from 'three';
+import Stats from 'three/addons/libs/stats.module.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+let container, stats;
+let camera, controls, scene, renderer;
+let mesh;
+
+let imageWidth, imageHeight;
+let heightData;
+
+const clock = new THREE.Clock();
+
+// Load the Image and initialize
+const imageLoader = new THREE.ImageLoader();
+imageLoader.load('depth.jpg', function (image) {
+
+    imageWidth = image.width;
+    imageHeight = image.height;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = imageWidth;
+    canvas.height = imageHeight;
+
+    const context = canvas.getContext('2d');
+    context.drawImage(image, 0, 0, imageWidth, imageHeight);
+
+    const imgData = context.getImageData(0, 0, imageWidth, imageHeight);
+    heightData = new Uint8Array(imageWidth * imageHeight);
+
+    for (let i = 0, j = 0; i < imgData.data.length; i += 4, j++) {
+        const r = imgData.data[i];
+        const g = imgData.data[i + 1];
+        const b = imgData.data[i + 2];
+        heightData[j] = (r + g + b) / 3;
+    }
+
+    // Load texture for the mesh
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load('cat.jpg', function (texture) {
+        // Now that the texture is loaded, you can generate the terrain
+        init(texture);
+        animate();
+    });
+
+});
+
+function init(texture) {
+
+    container = document.getElementById('terrain');
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
+    camera.position.set(imageWidth / 2, 800, -imageHeight / 2);
+    camera.lookAt(imageWidth / 2, 0, imageHeight / 2);
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xefd1b5);
+
+    const geometry = new THREE.PlaneGeometry(imageWidth, imageHeight, imageWidth - 1, imageHeight - 1);
+    geometry.rotateX(-Math.PI / 2);
+
+    const vertices = geometry.attributes.position.array;
+    for (let i = 0, j = 0, l = vertices.length; i < l; i++, j += 3) {
+        vertices[j + 1] = heightData[i]*4;
+    }
+
+    mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture })); 
+    scene.add(mesh);
+
+    renderer = new THREE.WebGLRenderer();
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
+
+    // Controls
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.update();
+
+    // Stats
+    stats = new Stats();
+    container.appendChild(stats.dom);
+
+    window.addEventListener('resize', onWindowResize);
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    controls.handleResize();
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    render();
+    controls.update();
+    stats.update();
+}
+
+function render() {
+    renderer.render(scene, camera);
+}
+
+
+
+// import * as THREE from 'three';
+// import Stats from 'three/addons/libs/stats.module.js';
+// import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// let container, stats;
+// let camera, controls, scene, renderer;
+// let mesh;
+
+// let imageWidth, imageHeight;
+// let heightData;
+
+// const clock = new THREE.Clock();
+
+// // Load the Image and initialize
+// const imageLoader = new THREE.ImageLoader();
+// imageLoader.load('depth.jpg', function (image) {
+
+//     imageWidth = image.width;
+//     imageHeight = image.height;
+
+//     const canvas = document.createElement('canvas');
+//     canvas.width = imageWidth;
+//     canvas.height = imageHeight;
+
+//     const context = canvas.getContext('2d');
+//     context.drawImage(image, 0, 0, imageWidth, imageHeight);
+
+//     const imgData = context.getImageData(0, 0, imageWidth, imageHeight);
+//     heightData = new Uint8Array(imageWidth * imageHeight); // Adjusted to Uint8Array for consistency
+
+//     // Extract Brightness Values
+//     for (let i = 0, j = 0; i < imgData.data.length; i += 4, j++) {
+//         const r = imgData.data[i];
+//         const g = imgData.data[i + 1];
+//         const b = imgData.data[i + 2];
+//         heightData[j] = (r + g + b) / 3;
+//     }
+
+//     // Generate Terrain
+//     init();
+//     animate();
+
+// });
+
+// function init() {
+
+//     container = document.getElementById('terrain');
+    
+//     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
+//     camera.position.set(imageWidth / 2, 800, -imageHeight / 2);
+//     camera.lookAt(imageWidth / 2, 0, imageHeight / 2);
+    
+//     scene = new THREE.Scene();
+//     scene.background = new THREE.Color(0xefd1b5);
+//     //scene.fog = new THREE.FogExp2(0xefd1b5, 0.0025);
+    
+//     const geometry = new THREE.PlaneGeometry(imageWidth, imageHeight, imageWidth - 1, imageHeight - 1);
+//     geometry.rotateX(-Math.PI / 2);
+//     const vertices = geometry.attributes.position.array;
+//     for (let i = 0, j = 0, l = vertices.length; i < l; i++, j += 3) {
+//         vertices[j + 1] = heightData[i]; // Using the height data generated from the image
+//     }
+    
+//     mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({color: 0x888888})); // Simple color for demo purposes
+//     scene.add(mesh);
+    
+//     renderer = new THREE.WebGLRenderer();
+//     renderer.setPixelRatio(window.devicePixelRatio);
+//     renderer.setSize(window.innerWidth, window.innerHeight);
+    
+//     container.appendChild(renderer.domElement);
+    
+//     // Controls
+//     controls = new OrbitControls(camera, renderer.domElement);
+//     controls.update();  // only required if controls.enableDamping = true, or if controls.autoRotate = true
+    
+//     // Stats
+//     stats = new Stats();
+//     container.appendChild(stats.dom);
+//     window.addEventListener('resize', onWindowResize);
+// }
+// function onWindowResize() {
+//     camera.aspect = window.innerWidth / window.innerHeight;
+//     camera.updateProjectionMatrix();
+//     renderer.setSize(window.innerWidth, window.innerHeight);
+//     controls.handleResize();
+// }
+// function animate() {
+//     requestAnimationFrame(animate);
+//     render();
+//     controls.update(); 
+//     stats.update();
+// }
+// function render() {
+//     renderer.render(scene, camera);
+// }
+
+
+
+</script>
+
+
+
+
+
+</body>
+</html>
