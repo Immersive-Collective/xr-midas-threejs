@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Depth Map Result</title>
+
+    <style type="text/css">
+
+        body {
+            display: block;
+            /* The 'body' element is block-level by default */
+            font-family: Helvetica, Arial, sans-serif;
+            /* Set the font family */
+            margin: 0;
+            /* Remove default margin */
+            padding: 0;
+            /* Remove default padding */
+            background-color: #f4f4f4;
+            /* Light gray background color */
+            color: #333;
+            /* Dark text color for readability */
+            line-height: 1.6;
+            /* Spacing between lines of text */
+            font-size: 16px;
+            /* Base font size */
+        }
+
+        .im {
+            max-width: 20%;
+            height: auto;
+        }
+
+        #ui {
+            position: absolute;
+            display: block;
+            left: 0;
+            top: 0;
+            margin: 0;
+            border: 0;
+            padding: 0;
+            z-index: 100;
+            pointer-events: all;
+        }
+
+        #upload {
+            position: absolute;
+            right: 0;
+            top: 0;
+            display: block;
+            background: none;
+            padding: 1rem;
+            pointer-events: all;
+        }
+
+        
+        /* Base styling for the anchor element */
+        a {
+            color: #3498db;  /* Link color */
+            text-decoration: none;  /* Removes underline */
+            padding: 10px 20px;  /* Some padding for clickable area */
+            border-radius: 5px;  /* Rounded corners */
+            transition: background-color 0.3s, color 0.3s;  /* Smooth transitions */
+            font-weight: 500;  /* Semi-bold font weight */
+        }
+
+        /* Hover effect */
+        a:hover {
+            background-color: #3498db;  /* Link color becomes the background color */
+            color: #ffffff;  /* Text color becomes white */
+        }
+
+        /* Focus style for accessibility */
+        a:focus {
+            outline: 2px dashed #3498db;
+            outline-offset: 2px;
+        }
+
+        /* Active state (when the link is being clicked) */
+        a:active {
+            background-color: #2980b9;  /* Slightly darker shade of the original color */
+        }
+
+
+    </style>
+
+
+</head>
+
+<body>
+
+
+
+
+
+<script type="importmap">
+        {
+  "imports": {
+    "three": "{{ url_for('static', filename='libs/three/build/three.module.js') }}",
+    "three/addons/": "{{ url_for('static', filename='libs/three/examples/jsm/') }}"
+  }
+}
+</script>
+
+<script type="module">
+
+
+import * as THREE from 'three';
+import Stats from 'three/addons/libs/stats.module.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { VRButton } from 'three/addons/webxr/VRButton.js';
+
+let stats;
+let camera, controls, scene, renderer, meshGroup
+
+let mesh;
+let imageWidth, imageHeight;
+let heightData;
+let xrRefSpace;
+let hand1, hand2;
+let controller1, controller2;
+let controllerGrip1, controllerGrip2;
+let conS = [];
+let bgColor =  Math.random()*1000000000;
+
+const container = document.createElement('div');
+document.body.appendChild(container);
+
+const clock = new THREE.Clock();
+
+
+function processImage() {
+    const form = new FormData(document.getElementById('uploadForm'));
+    fetch('/upload', {
+        method: 'POST',
+        body: form
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }        
+        // If the AJAX request is successful, initialize the ThreeJS scene with the returned URLs
+        initializeThreeJS(data.image_url, data.depth_image_url);
+    })
+    .catch(error => {
+        console.error('Error uploading image:', error);
+    });
+}
+
+
+
+/* WebXR */
+function onXRSessionStart() {
+    const session = renderer.xr.getSession();
+    console.log("onSessionStart session", session);
+    session.requestReferenceSpace('local').then((referenceSpace) => {
+        xrRefSpace = referenceSpace;
+    });
+}
+
+function onXRSessionEnd() {
+    console.log("onSessionEnd")
+    if (renderer.xr.isPresenting) {
+        renderer.xr.end();
+    }
+}
+
+
+/* Load Images */
+function initializeThreeJS(uploadedImageUrl, depthImageUrl) {
+    loadDepthImage(uploadedImageUrl, depthImageUrl);
+}
+
+
+function loadDepthImage(uploadedImageUrl, depthImageUrl) {
+    // Now the image URLs are passed as arguments
+    const imageLoader = new THREE.ImageLoader();
+    imageLoader.load(depthImageUrl, function (image) {
+        imageWidth = image.width;
+        imageHeight = image.height;
+        const canvas = document.createElement('canvas');
+        canvas.width = imageWidth;
+        canvas.height = imageHeight;
+        const context = canvas.getContext('2d');
+        context.drawImage(image, 0, 0, imageWidth, imageHeight);
+        const imgData = context.getImageData(0, 0, imageWidth, imageHeight);
+        heightData = new Uint8Array(imageWidth * imageHeight);
+        for (let i = 0, j = 0; i < imgData.data.length; i += 4, j++) {
+            const r = imgData.data[i];
+            const g = imgData.data[i + 1];
+            const b = imgData.data[i + 2];
+            heightData[j] = (r + g + b) / 3;
+        }
+        // Load texture for the mesh
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.load(uploadedImageUrl, function (texture) {
+            // Now that the texture is loaded, you can generate the terrain
+            makeMesh(texture);
+        });
+    });
+} 
+
+function makeScene() {
+
+    console.log("makeScene");
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xefd1b5);
+
+    // RENDERER
+    renderer = new THREE.WebGLRenderer({ antialias: true, xrCompatible: true });
+    renderer.setClearColor(bgColor, 1); // Sets the background color to white with 50% opacity
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    // switch to false to improve rendering
+    renderer.shadowMap.enabled = false;
+    renderer.xr.enabled = true;
+    renderer.xr.addEventListener('sessionstart', onXRSessionStart);
+    renderer.xr.addEventListener('sessionend', onXRSessionEnd);
+    container.appendChild(renderer.domElement);
+    document.body.appendChild(VRButton.createButton(renderer));
+
+    // Controls
+    controls = new OrbitControls(camera, renderer.domElement);
+
+    // Stats
+    stats = new Stats();
+    //container.appendChild(stats.dom);
+
+    window.addEventListener('resize', onWindowResize);
+
+    //loadDepthImage();
+
+    animate();
+}
+
+function makeMesh(texture) {
+
+    const geometry = new THREE.PlaneGeometry(imageWidth, imageHeight, imageWidth - 1, imageHeight - 1);
+
+    geometry.rotateX(-Math.PI / 2);
+
+    const vertices = geometry.attributes.position.array;
+    for (let i = 0, j = 0, l = vertices.length; i < l; i++, j += 3) {
+        vertices[j + 1] = heightData[i]*4;
+    }
+    meshGroup = new THREE.Group();
+
+    scene.add(meshGroup)
+    window.meshGroup = meshGroup;
+
+    mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture })); 
+    meshGroup.add(mesh);
+
+    let someDistance = -3000;  // Adjust this value based on your requirements
+    meshGroup.position.set(0,0,someDistance);
+    meshGroup.rotation.set(1.5,0,0);
+
+    camera.lookAt(meshGroup.position);
+    camera.position.set(0,1.7,0);
+
+    controls.target.copy(meshGroup.position)
+    controls.update();
+
+
+}
+
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    //controls.handleResize();
+}
+
+function animate() {
+    renderer.setAnimationLoop(render);
+}
+
+function render(timeStamp, xrFrame) {
+    renderer.render(scene, camera);
+}
+
+makeScene();
+
+
+document.getElementById('uploadForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    processImage();
+});
+
+
+
+
+
+</script>
+
+
+    <div id="ui">
+        
+    <form id="uploadForm">
+        <input type="file" name="file" required />
+        <input type="submit" value="Upload Image" />
+    </form>
+
+        <div id="imageContainer">
+            <!-- Images will be appended here after processing -->
+        </div>
+        
+        <div id="3dContainer">
+            <!-- Three.js scene will go here -->
+        </div>
+    </div>
+    <!-- ... your other scripts -->
+
+    <script>
+        // Add an event listener for form submission
+        document.getElementById('uploadForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            
+            let formData = new FormData(this);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            
+            .then(response => response.json())
+
+            .then(data => {
+                // Display the processed images
+                let imageContainer = document.getElementById('imageContainer');
+                imageContainer.innerHTML = `
+                    <img class="im" src="${data.image_url}" alt="Original Image">
+                    <img class="im" src="${data.depth_image_url}" alt="Depth Image">
+                `;
+
+                // Initialize the Three.js scene with the new images
+                // ... your Three.js initialization code here, you might need to modify it to use the new image URLs
+            })
+            .catch(error => {
+                console.error('There was an error uploading the image:', error);
+            });
+        });
+    </script>
+</body>
+
+</html>
