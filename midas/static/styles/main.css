@@ -100,7 +100,7 @@ a:active {
     text-align: center;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 20px; /* make the text bigger for mobile readability */
+    font-size: 2rem; /* make the text bigger for mobile readability */
     width: 100%; /* full width for easier tapping on mobile */
     border: none;
     margin: 0;
