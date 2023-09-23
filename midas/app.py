@@ -55,8 +55,8 @@ def process_image(filename):
 
     # Load the model
     #model_type = "DPT_Large"     # MiDaS v3 - Large     (highest accuracy, slowest inference speed)
-    #model_type = "DPT_Hybrid"   # MiDaS v3 - Hybrid    (medium accuracy, medium inference speed)
-    model_type = "MiDaS_small"  # MiDaS v2.1 - Small   (lowest accuracy, highest inference speed)
+    model_type = "DPT_Hybrid"   # MiDaS v3 - Hybrid    (medium accuracy, medium inference speed)
+    #model_type = "MiDaS_small"  # MiDaS v2.1 - Small   (lowest accuracy, highest inference speed)
     midas = torch.hub.load("intel-isl/MiDaS", model_type, force_reload=False, trust_repo=True)
     midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms", force_reload=False)
 
