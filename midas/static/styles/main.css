@@ -86,18 +86,30 @@ a:active {
 }
 
 
+#imageContainer {
+    bottom: 0;
+}
+
 
 
 .custom-file-upload {
+    display: block;
+    background-color: #4CAF50; /* green background color */
+    color: white; /* white text */
     padding: 10px 15px;
+    text-align: center;
+    border-radius: 5px;
     cursor: pointer;
-    background-color: #4CAF50; /* green background */
-    color: white;  /* white text */
+    font-size: 20px; /* make the text bigger for mobile readability */
+    width: 100%; /* full width for easier tapping on mobile */
     border: none;
-    border-radius: 4px;
-    display: inline-block;
-    transition: background-color 0.3s ease;
+    margin: 0;
+    position: fixed; /* fix position at the bottom */
+    bottom: 0; /* position it at the bottom */
+    left: 0; /* starting from the left */
+    z-index: 1000; /* place it on top of other elements */
 }
+
 
 .custom-file-upload:hover {
     background-color: #45a049; /* darker green on hover */

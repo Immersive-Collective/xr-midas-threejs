@@ -227,22 +227,24 @@ depthImg.onerror = function() {
 
 
 </script>
-    <div id="ui">
-        <form id="uploadForm">
-
-            <label for="file-upload" class="custom-file-upload">
-                Upload Image
-            </label>
-            <input id="file-upload" type="file" name="file" required style="display:none;" />
 
 
-
-        </form>
-        <div id="imageContainer">
-            <img class="im" id="preview" alt="Image Preview" src="{{ url_for('static', filename='images/placeholder.jpeg') }}">
-            <img class="im" id="depth-image" alt="Depth Image" src="{{ url_for('static', filename='images/placeholder.jpeg') }}">
-        </div>
+<div id="ui" style="padding-bottom: 50px;"> <!-- Add padding to account for the fixed button -->
+    <div id="imageContainer">
+        <img class="im" id="preview" alt="Image Preview" src="{{ url_for('static', filename='images/placeholder.jpeg') }}">
+        <img class="im" id="depth-image" alt="Depth Image" src="{{ url_for('static', filename='images/placeholder.jpeg') }}">
     </div>
+    <form id="uploadForm">
+        <label for="file-upload" class="custom-file-upload">
+            Upload Image
+        </label>
+        <input id="file-upload" type="file" name="file" required style="display:none;" />
+    </form>
+</div>
+
+
+
+    
 </body>
 
 </html>
