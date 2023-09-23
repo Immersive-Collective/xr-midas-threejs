@@ -96,11 +96,11 @@ a:active {
     display: block;
     background-color: #4CAF50; /* green background color */
     color: white; /* white text */
-    padding: 10px 15px;
+    padding: 1rem;
     text-align: center;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 2rem; /* make the text bigger for mobile readability */
+    font-size: 3rem; /* make the text bigger for mobile readability */
     width: 100%; /* full width for easier tapping on mobile */
     border: none;
     margin: 0;
