@@ -1,0 +1,104 @@
+body {
+    display: block;
+    font-family: Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+    font-size: 16px;
+}
+
+.im {
+    max-width: 20%;
+    height: auto;
+}
+
+
+#ui {
+    position: absolute;
+    display: block;
+    left: 0;
+    top: 0;
+    margin: 0;
+    border: 0;
+    padding: 0;
+    z-index: 100;
+    pointer-events: all;
+}
+
+#upload {
+    position: absolute;
+    right: 0;
+    top: 0;
+    display: block;
+    background: none;
+    padding: 1rem;
+    pointer-events: all;
+}
+
+form#uploadForm {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+input[type="file"] {
+    padding: 10px;
+    cursor: pointer;
+}
+
+input[type="submit"] {
+    padding: 10px 15px;
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+input[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+a {
+    color: #3498db;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    transition: background-color 0.3s, color 0.3s;
+    font-weight: 500;
+}
+
+a:hover {
+    background-color: #3498db;
+    color: #ffffff;
+}
+
+a:focus {
+    outline: 2px dashed #3498db;
+    outline-offset: 2px;
+}
+
+a:active {
+    background-color: #2980b9;
+}
+
+
+
+
+.custom-file-upload {
+    padding: 10px 15px;
+    cursor: pointer;
+    background-color: #4CAF50; /* green background */
+    color: white;  /* white text */
+    border: none;
+    border-radius: 4px;
+    display: inline-block;
+    transition: background-color 0.3s ease;
+}
+
+.custom-file-upload:hover {
+    background-color: #45a049; /* darker green on hover */
+}
