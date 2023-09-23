@@ -10,7 +10,9 @@ app = Flask(__name__)
 
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'outputs'
-ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
+LIBS_FOLDER = 'libs'
+
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'js'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
@@ -93,6 +95,11 @@ def process_image(filename):
     # Save the output as an image
     plt.imsave(os.path.join(app.config['OUTPUT_FOLDER'], "output_depthmap.jpg"), output)
 
+
+@app.route('/libs/<filename>')
+def libs_file(filename):
+    #return send_from_directory(app.config['OUTPUT_FOLDER'], filename)
+    return send_from_directory(os.path.abspath(app.config['LIBS_FOLDER']), filename)
 
 @app.route('/outputs/<filename>')
 def outputed_file(filename):
