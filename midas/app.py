@@ -15,6 +15,31 @@ ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'heic', 'bmp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 
+def resize_image(image_path, max_width=1920):
+    """Resizes the image while maintaining the aspect ratio with a maximum width."""
+    
+    # Read the image
+    img = cv2.imread(image_path)
+
+    # Check if the image width exceeds the maximum width
+    if img.shape[1] > max_width:
+        # Calculate the aspect ratio
+        aspect_ratio = img.shape[1] / img.shape[0]
+
+        # New dimensions
+        new_width = max_width
+        new_height = int(new_width / aspect_ratio)
+
+        # Resize the image
+        img = cv2.resize(img, (new_width, new_height))
+
+        # Save the resized image back
+        cv2.imwrite(image_path, img)
+
+    return img
+
+
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -34,7 +59,12 @@ def upload_file():
     if file and allowed_file(file.filename):
         filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(filename)
+        
+        resize_image(filename)
+
         process_image(filename)
+
+
         basename = os.path.basename(filename)
         depth_filename = os.path.join(app.config['OUTPUT_FOLDER'], os.path.splitext(basename)[0] + "_depth.jpg")
         os.rename(os.path.join(app.config['OUTPUT_FOLDER'], "output_depthmap.jpg"), depth_filename)

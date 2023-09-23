@@ -218,11 +218,11 @@ const previewImg = document.getElementById('preview');
 const depthImg = document.getElementById('depth-image');
 
 previewImg.onerror = function() {
-    this.src = "{{ url_for('static', filename='images/placeholder.webp') }}"; // replace with your default image path
+    this.src = "{{ url_for('static', filename='images/placeholder.jpeg') }}"; // replace with your default image path
 };
 
 depthImg.onerror = function() {
-    this.src = "{{ url_for('static', filename='images/placeholder.webp') }}"; // replace with your default image path
+    this.src = "{{ url_for('static', filename='images/placeholder.jpeg') }}"; // replace with your default image path
 };
 
 
@@ -239,8 +239,8 @@ depthImg.onerror = function() {
 
         </form>
         <div id="imageContainer">
-            <img class="im" id="preview" alt="Image Preview" src="{{ url_for('static', filename='images/placeholder.webp') }}">
-            <img class="im" id="depth-image" alt="Depth Image" src="{{ url_for('static', filename='images/placeholder.webp') }}">
+            <img class="im" id="preview" alt="Image Preview" src="{{ url_for('static', filename='images/placeholder.jpeg') }}">
+            <img class="im" id="depth-image" alt="Depth Image" src="{{ url_for('static', filename='images/placeholder.jpeg') }}">
         </div>
     </div>
 </body>
