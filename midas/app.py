@@ -107,7 +107,8 @@ def process_image(filename):
         model_type = "DPT_Large"
     else:
         model_type = "MiDaS_small"
-    
+    logging.info("deploy_env: %s model_type: %s", deploy_env, model_type)
+
     midas = torch.hub.load("intel-isl/MiDaS", model_type, force_reload=False, trust_repo=True)
     midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms", force_reload=False)
 
