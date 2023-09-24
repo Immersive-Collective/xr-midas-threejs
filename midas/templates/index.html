@@ -119,11 +119,9 @@ function makeScene() {
     
     //document.body.appendChild(VRButton.createButton(renderer));
     const vrButton = VRButton.createButton(renderer);
-    VRButton.isAvailable().then(isAvailable => {
-        if (isAvailable) {
-            document.body.appendChild(vrButton);
-        }
-    });
+    if (navigator.xr) {
+        document.body.appendChild(vrButton);
+    }
 
     controls = new OrbitControls(camera, renderer.domElement);
     stats = new Stats();
