@@ -15,20 +15,22 @@ ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'heic', 'bmp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 
-def resize_image(image_path, max_width=1920):
-    """Resizes the image while maintaining the aspect ratio with a maximum width."""
-    
+def resize_image(image_path, max_dimension=1920):
+    """Resizes the image while maintaining the aspect ratio with a maximum width or height."""
+
     # Read the image
     img = cv2.imread(image_path)
 
-    # Check if the image width exceeds the maximum width
-    if img.shape[1] > max_width:
-        # Calculate the aspect ratio
-        aspect_ratio = img.shape[1] / img.shape[0]
-
-        # New dimensions
-        new_width = max_width
-        new_height = int(new_width / aspect_ratio)
+    # Check if the image width or height exceeds the maximum dimension
+    if img.shape[1] > max_dimension or img.shape[0] > max_dimension:
+        if img.shape[1] > img.shape[0]:  # Image is landscape
+            aspect_ratio = img.shape[1] / img.shape[0]
+            new_width = max_dimension
+            new_height = int(new_width / aspect_ratio)
+        else:  # Image is portrait
+            aspect_ratio = img.shape[0] / img.shape[1]
+            new_height = max_dimension
+            new_width = int(new_height / aspect_ratio)
 
         # Resize the image
         img = cv2.resize(img, (new_width, new_height))
@@ -37,6 +39,7 @@ def resize_image(image_path, max_width=1920):
         cv2.imwrite(image_path, img)
 
     return img
+
 
 
 
