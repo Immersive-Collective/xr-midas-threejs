@@ -1,10 +1,16 @@
 import os
 import cv2
 import torch
+import logging
 import matplotlib.pyplot as plt
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory, jsonify
 
+logging.basicConfig(level=logging.DEBUG)
+
 app = Flask(__name__)
+
+app.logger.addHandler(logging.StreamHandler())
+app.logger.setLevel(logging.DEBUG)
 
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'outputs'
@@ -79,52 +85,6 @@ def upload_file():
 
     return jsonify({"error": "File type not allowed"}), 400
 
-# import os
-# import cv2
-# import torch
-# import matplotlib.pyplot as plt
-# from flask import Flask, render_template, request, redirect, url_for, send_from_directory
-
-
-
-# app = Flask(__name__)
-
-# UPLOAD_FOLDER = 'uploads'
-# OUTPUT_FOLDER = 'outputs'
-# LIBS_FOLDER = 'libs'
-
-# ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'heic', 'bmp'}
-
-# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-# app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
-
-# # ...
-
-# def allowed_file(filename):
-#     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-# @app.route('/')
-# def index():
-#     return render_template('upload.html')
-
-# @app.route('/upload', methods=['POST'])
-# def upload_file():
-#     if 'file' not in request.files:
-#         return jsonify({"error": "No file provided"}), 400
-
-#     file = request.files['file']
-#     if file.filename == '':
-#         return jsonify({"error": "No file selected"}), 400
-
-#     if file and allowed_file(file.filename):
-#         filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-#         file.save(filename)
-#         process_image(filename)
-#         basename = os.path.basename(filename)
-#         depth_filename = os.path.join(app.config['OUTPUT_FOLDER'], os.path.splitext(basename)[0] + "_depth.jpg")
-#         os.rename(os.path.join(app.config['OUTPUT_FOLDER'], "output_depthmap.jpg"), depth_filename)
-#         return render_template('result.html', filename=basename, depth_filename=os.path.basename(depth_filename))
-#         #return render_template('result.html', filename="output_depthmap.jpg")
 
 def process_image(filename):
     # img_path is directly filename since filename already has the correct path
@@ -139,7 +99,15 @@ def process_image(filename):
     # Load the model
     #model_type = "DPT_Large"     # MiDaS v3 - Large     (highest accuracy, slowest inference speed)
     #model_type = "DPT_Hybrid"   # MiDaS v3 - Hybrid    (medium accuracy, medium inference speed)
-    model_type = "MiDaS_small"  # MiDaS v2.1 - Small   (lowest accuracy, highest inference speed)
+    #model_type = "MiDaS_small"  # MiDaS v2.1 - Small   (lowest accuracy, highest inference speed)
+
+    deploy_env = os.environ.get('DEPLOY_ENV', 'local')
+
+    if deploy_env == 'server':
+        model_type = "DPT_Large"
+    else:
+        model_type = "MiDaS_small"
+    
     midas = torch.hub.load("intel-isl/MiDaS", model_type, force_reload=False, trust_repo=True)
     midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms", force_reload=False)
 
