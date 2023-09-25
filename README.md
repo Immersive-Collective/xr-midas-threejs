@@ -1,14 +1,11 @@
 # xr-midas-threejs
-
-
-Additional README https://github.com/Immersive-Collective/xr-midas-threejs/tree/main/midas
-
-https://github.com/Immersive-Collective/xr-midas-threejs/assets/27820237/7509b05b-e82b-4183-bafb-8c2d87bd6f43
-Of course, let's combine both parts into a unified README. This README will help users understand the integration of Flask with Three.js for the given `index.html` project:
-
----
-
 # XR 2.5: Flask Meets Three.js
+
+# Demo
+https://github.com/Immersive-Collective/xr-midas-threejs/assets/27820237/5d6934e3-81bf-4de8-a684-741768a4b2f8
+
+# Live Demo
+https://metaboy.tech:5050/
 
 Welcome to the XR 2.5 project. This application is an integration of Flask, a lightweight Python web framework, and Three.js, a popular JavaScript library for 3D graphics. The project lets users upload images which are then processed and rendered using Three.js in a virtual environment.
 
