@@ -165,26 +165,3 @@ if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050, debug=True)
 
 
-# @app.route('/libs/<filename>')
-# def libs_file(filename):
-#     #return send_from_directory(app.config['OUTPUT_FOLDER'], filename)
-#     return send_from_directory(os.path.abspath(app.config['LIBS_FOLDER']), filename)
-
-# @app.route('/outputs/<filename>')
-# def outputed_file(filename):
-#     #return send_from_directory(app.config['OUTPUT_FOLDER'], filename)
-#     return send_from_directory(os.path.abspath(app.config['OUTPUT_FOLDER']), filename)
-
-# @app.route('/uploads/<filename>')
-# def uploaded_file(filename):
-#     #return send_from_directory(app.config['OUTPUT_FOLDER'], filename)
-#     return send_from_directory(os.path.abspath(app.config['UPLOAD_FOLDER']), filename)
-
-
-# if __name__ == '__main__':
-#     if not os.path.exists(UPLOAD_FOLDER):
-#         os.makedirs(UPLOAD_FOLDER)
-#     if not os.path.exists(OUTPUT_FOLDER):
-#         os.makedirs(OUTPUT_FOLDER)
-#     app.run(host='0.0.0.0', port=5050, debug=True)
-

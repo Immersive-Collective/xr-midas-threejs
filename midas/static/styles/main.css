@@ -7,6 +7,10 @@ body {
     color: #333;
     line-height: 1.6;
     font-size: 16px;
+    -webkit-user-select: none;  /* Safari */
+    -moz-user-select: none;     /* Firefox */
+    -ms-user-select: none;      /* IE/Edge */
+    user-select: none;  
 }
 
 .im {
@@ -48,6 +52,24 @@ body {
         opacity: 0.15;
     }
 }
+
+.github-corner {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000; /* Ensure it's above other content */
+}
+
+.github-icon {
+    width: 40px; /* Adjust based on your preference */
+    height: auto;
+    transition: opacity 0.3s;
+}
+
+.github-corner:hover .github-icon {
+    opacity: 0.7;
+}
+
 
 .pulsating-image {
     animation: pulsate 0.15s infinite; /* 2s is the duration of one cycle, adjust as needed */
