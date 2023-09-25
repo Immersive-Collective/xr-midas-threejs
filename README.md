@@ -3,6 +3,9 @@
 
 # Demo
 https://github.com/Immersive-Collective/xr-midas-threejs/assets/27820237/5d6934e3-81bf-4de8-a684-741768a4b2f8
+https://github.com/Immersive-Collective/xr-midas-threejs/assets/27820237/cde1a68b-9da5-4466-8d48-ec336511fd32
+
+
 
 # Live Demo
 https://metaboy.tech:5050/
