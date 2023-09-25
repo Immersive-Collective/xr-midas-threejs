@@ -1,6 +1,12 @@
 
 # Midas2 3D Terrain Visualization
 
+
+
+https://github.com/Immersive-Collective/xr-midas-threejs/assets/27820237/f454a6f4-7307-4e6f-a9d1-8308d52de7c6
+
+
+
 This repository showcases an application that leverages the capabilities of the Midas2 model to generate depth data from a single image. The depth data, indicative of the distance of each object in the image from the camera, is then transformed into a 3D terrain representation using ThreeJS.
 
 ## Overview:
