@@ -94,5 +94,3 @@ For issues, bugs, or feature requests, please raise an issue or pull request on 
 Thanks to the contributors of Three.js, Flask, Rapier.js, and other libraries/tools used in this project.
 
 ---
-
-This README provides an overview of the project's structure, usage, and features. It can be further enhanced based on the actual content and features of the project.
