@@ -1,4 +1,9 @@
 
+archive/
+*.blend
+*.blend1
+design/
+
 outputs/
 uploads/
 

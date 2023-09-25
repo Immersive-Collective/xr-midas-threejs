@@ -39,18 +39,18 @@ body {
 
 @keyframes pulsate {
     0% {
-        opacity: 0.5;
+        opacity: 0.15;
     }
     50% {
         opacity: 1;
     }
     100% {
-        opacity: 0.5;
+        opacity: 0.15;
     }
 }
 
 .pulsating-image {
-    animation: pulsate 2s infinite; /* 2s is the duration of one cycle, adjust as needed */
+    animation: pulsate 0.15s infinite; /* 2s is the duration of one cycle, adjust as needed */
 }
 
 

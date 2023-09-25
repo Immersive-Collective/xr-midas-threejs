@@ -2,24 +2,36 @@
 <html>
 
 <head>
-    <title>Depth Map Result</title>
+    <title>XR 2.5</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/main.css') }}">
 </head>
 
 <body>
-    <script type="importmap">
-        {
+
+
+<script type="importmap">
+{
   "imports": {
     "three": "{{ url_for('static', filename='libs/three/build/three.module.js') }}",
     "three/addons/": "{{ url_for('static', filename='libs/three/examples/jsm/') }}"
   }
 }
 </script>
-    <script type="module">
-        import * as THREE from 'three';
+
+<!-- <script type="module" src="{{ url_for('static', filename='libs/rapier/rapier_wasm3d.js') }}"></script>
+ -->
+
+<script type="module">
+
+import * as THREE from 'three';
 import Stats from 'three/addons/libs/stats.module.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+// /Users/smielniczuk/Documents/works/ic/xr-midas-threejs/midas/static/libs/draco
+
 
 let stats;
 let camera, controls, scene, renderer, meshGroup
@@ -38,25 +50,179 @@ document.body.appendChild(container);
 
 const clock = new THREE.Clock();
 
-function processImage() {
-    const form = new FormData(document.getElementById('uploadForm'));
-    document.getElementById("depth-image").content = "Processing"
-    fetch('/upload', {
-        method: 'POST',
-        body: form
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            alert(data.error);
-            return;
-        }        
-        initializeThreeJS(data.image_url, data.depth_image_url);
-    })
-    .catch(error => {
-        console.error('Error uploading image:', error);
+
+/* Rapier */
+
+let groundHeight = 0;
+let eventQueue;
+
+//import RAPIER from 'https://cdn.skypack.dev/@dimforge/rapier3d-compat';
+import RAPIER from '{{ url_for('static', filename='libs/rapier3d-compat/rapier.es.js') }}';
+
+// OR using the await syntax:
+async function run_simulation() {
+    await RAPIER.init();
+    // Run the simulation.
+    console.log(RAPIER)
+
+    let gravity = { x: 0.0, y: -1.8, z: 0.0 };
+    let world = new RAPIER.World(gravity);
+    const eventQueue = new RAPIER.EventQueue(true);
+
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('static/libs/draco'); 
+    
+
+    const loader = new GLTFLoader();
+    loader.setDRACOLoader(dracoLoader);
+
+
+    loader.load('{{ url_for('static', filename='models/test.glb') }}', gltf => {
+
+        let mesh = gltf.scene
+        mesh.name = "PAD"
+
+        scene.add(mesh);
+        window.cube = mesh;
+
+        cube.position.z = -20
+
+        controls.target.copy(mesh.position)
+        controls.update();
+
+
+        gltf.scene.traverse(item => {
+
+            if (item.isMesh) {
+          
+                const geometry = item.geometry;
+          
+                console.log(geometry)
+
+                const vertices = geometry.attributes.position.array;
+                const indices = geometry.index.array;
+
+                const trimesh = new RAPIER.TriMesh(vertices, indices);
+
+                console.log('TriMesh created successfully', trimesh);
+
+                // console.log('Vertices length:', vertices.length);
+                // console.log('Indices length:', indices.length);
+
+                let groundColliderDesc = RAPIER.ColliderDesc.trimesh(trimesh)
+                    .setDensity(100)
+                    .setTranslation(0, groundHeight, 0)
+                    .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
+
+                //console.log(groundColliderDesc);
+                //console.log("groundColliderDesc.shape", groundColliderDesc.shape);
+
+                // this part is a kind of hack, check the
+                groundColliderDesc.shape.indices = indices;
+                groundColliderDesc.shape.vertices = vertices;
+
+
+                let groundCollider = world.createCollider(groundColliderDesc);
+                window.groundColliderHandle = groundCollider.handle;
+
+                window.myRapierWorld = world;
+                window.eventQueue = eventQueue;
+
+
+            }
+        })
+
+    });
+
+
+}
+
+RAPIER.init().then(() => {
+    // Run the simulation.
+    run_simulation();
+});
+
+
+
+
+function updateRapier() {
+
+
+    if (window.myRapierWorld && window.rigidBodies) {
+
+        console.log("z")
+
+        //window.myRapierWorld.step();
+        window.myRapierWorld.step(window.eventQueue);
+
+        //console.log(window.rigidBodies)
+
+        for(let i = 0; i < window.rigidBodies.length; i++) {
+
+            if(window.rigidBodies[i].bodyType() == 0) {
+
+                let position = window.rigidBodies[i].translation();
+                window.threeCubes[i].position.set(position.x, position.y, position.z);
+
+                // Add this part to update the rotation
+                let rotation = window.rigidBodies[i].rotation(); // Assuming the rotation method returns a quaternion
+                window.threeCubes[i].quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+            }
+        }
+
+        // - TO DO
+        logEvents()
+
+
+    }
+}
+
+
+
+
+
+function exportGLB(mesh) {
+    const exporter = new GLTFExporter();
+    let glbData;
+    exporter.parse(mesh, (result) => {
+        const binary = new Blob([result], { type: 'application/octet-stream' });
+        glbData = binary;
+        const link = document.createElement('a');
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        const url = URL.createObjectURL(glbData);
+        link.href = url;
+        link.download = 'model.glb';
+        link.click();
+        URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+    }, { binary: true });
+}
+window.exportGLB = exportGLB;
+
+
+function exportGLTF(mesh) {
+    const exporter = new GLTFExporter();
+    let gltfData;
+    exporter.parse(mesh, (result) => {
+        if (result instanceof ArrayBuffer) {
+            gltfData = result;
+        } else {
+            const output = JSON.stringify(result, null, 2);
+            gltfData = new Blob([output], { type: 'text/plain' });
+        }
+        const link = document.createElement('a');
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        const url = URL.createObjectURL(gltfData);
+        link.href = url;
+        link.download = 'model.gltf';
+        link.click();
+        URL.revokeObjectURL(url);
+        document.body.removeChild(link);
     });
 }
+window.exportGLTF = exportGLTF;
 
 function onXRSessionStart() {
     const session = renderer.xr.getSession();
@@ -103,7 +269,9 @@ function loadDepthImage(uploadedImageUrl, depthImageUrl) {
 } 
 
 function makeScene() {
+
     console.log("makeScene");
+    
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xefd1b5);
@@ -124,13 +292,22 @@ function makeScene() {
     }
 
     controls = new OrbitControls(camera, renderer.domElement);
-    stats = new Stats();
+    controls.update()
     
+    stats = new Stats();
+    stats.dom.id = "myStats"
+    document.body.appendChild(stats.domElement);
+    let myStats = document.getElementById("myStats");
+    document.getElementById("myStats").setAttribute("style", "position: fixed; top: 0px; right: 0px; cursor: pointer; opacity: 0.9; z-index: 10000;")
+
     window.addEventListener('resize', onWindowResize);
+    
     animate();
+
 }
 
 function makeMesh(texture) {
+    
     const geometry = new THREE.PlaneGeometry(imageWidth, imageHeight, imageWidth - 1, imageHeight - 1);
     geometry.rotateX(-Math.PI / 2);
     const vertices = geometry.attributes.position.array;
@@ -145,18 +322,28 @@ function makeMesh(texture) {
     }
 
     meshGroup = new THREE.Group();
+
     scene.add(meshGroup)
+    
     window.meshGroup = meshGroup;
     texture.encoding = THREE.sRGBEncoding;
     mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture })); 
     meshGroup.add(mesh);
-    let someDistance = -3000;  
+    
+    let sc = 0.01
+    mesh.scale.set(sc,sc,sc)
+
+    let someDistance = -12;  
     meshGroup.position.set(0,0,someDistance);
     meshGroup.rotation.set(1.5,0,0);
+    
     camera.lookAt(meshGroup.position);
     camera.position.set(0,1.7,0);
+
     controls.target.copy(meshGroup.position)
     controls.update();
+
+
 }
 
 
@@ -171,6 +358,18 @@ function animate() {
 }
 
 function render(timeStamp, xrFrame) {
+
+    if(controls) {
+        //console.log("controls")
+      controls.update();
+    }
+
+    if(stats) {
+        stats.update()
+    }
+
+    updateRapier()
+
     renderer.render(scene, camera);
 }
 
@@ -178,13 +377,20 @@ makeScene();
 
 
 function handleUploadFormSubmission(e) {
+
     const formData = new FormData(document.getElementById('uploadForm'));
+
     fetch('/upload', {
         method: 'POST',
         body: formData
     })
+    
     .then(response => response.json())
+    
     .then(data => {
+
+        console.log("data", data)
+
         // Display the images
         document.getElementById('depth-image').src = `${data.depth_image_url}`
         
@@ -193,6 +399,7 @@ function handleUploadFormSubmission(e) {
         document.getElementById('depth-image').classList.remove('pulsating-image');
 
     })
+
     .catch(error => {
         console.error('There was an error uploading the image:', error);
     });
@@ -227,12 +434,15 @@ const previewImg = document.getElementById('preview');
 const depthImg = document.getElementById('depth-image');
 
 previewImg.onerror = function() {
-    this.src = "{{ url_for('static', filename='images/placeholder.jpeg') }}"; // replace with your default image path
+    this.src = "{{ url_for('static', filename='images/placeholder.jpg') }}"; // replace with your default image path
 };
 
 depthImg.onerror = function() {
-    this.src = "{{ url_for('static', filename='images/placeholder.jpeg') }}"; // replace with your default image path
+    this.src = "{{ url_for('static', filename='images/placeholder.jpg') }}"; // replace with your default image path
 };
+
+
+console.log("index.html")
 
 
 </script>
@@ -240,8 +450,8 @@ depthImg.onerror = function() {
 
 <div id="ui" style="padding-bottom: 50px;"> <!-- Add padding to account for the fixed button -->
     <div id="imageContainer">
-        <img class="im" id="preview" alt="Image Preview" src="{{ url_for('static', filename='images/placeholder.jpeg') }}">
-        <img class="im" id="depth-image" alt="Depth Image" src="{{ url_for('static', filename='images/placeholder.jpeg') }}">
+        <img class="im" id="preview" alt="Image Preview" src="{{ url_for('static', filename='images/placeholder.jpg') }}">
+        <img class="im" id="depth-image" alt="Depth Image" src="{{ url_for('static', filename='images/placeholder.jpg') }}">
     </div>
     <form id="uploadForm">
         <label for="file-upload" class="custom-file-upload">
