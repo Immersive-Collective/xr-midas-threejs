@@ -258,7 +258,7 @@ function addBallFromTop(radius, color, offsetY = 0.2, density = 1, position) {
 
     // Save the collider handle
     window.colliderHandles = window.colliderHandles || [];
-    console.log("collider.handle:",collider.handle)
+    //console.log("collider.handle:",collider.handle)
     window.colliderHandles.push(collider.handle);
 
     // Push to global arrays
@@ -319,35 +319,37 @@ function logEvents() {
 
 function updateRapier() {
 
+    if (window.myRapierWorld && window.rigidBodies && window.threeCubes) {
 
-    if (window.myRapierWorld && window.rigidBodies) {
+        // Check if sizes match
+        if (window.rigidBodies.length !== window.threeCubes.length) {
+            console.error("Mismatched sizes: rigidBodies vs threeCubes");
+            return;
+        }
 
-        //console.log("z")
-
-        //window.myRapierWorld.step();
         window.myRapierWorld.step(window.eventQueue);
 
-        //console.log(window.rigidBodies)
+        for (let i = 0; i < window.rigidBodies.length; i++) {
 
-        for(let i = 0; i < window.rigidBodies.length; i++) {
-
-            if(window.rigidBodies[i].bodyType() == 0) {
+            if (window.rigidBodies[i].bodyType() == 0) {
 
                 let position = window.rigidBodies[i].translation();
-                window.threeCubes[i].position.set(position.x, position.y, position.z);
+                let rotation = window.rigidBodies[i].rotation();
 
-                // Add this part to update the rotation
-                let rotation = window.rigidBodies[i].rotation(); // Assuming the rotation method returns a quaternion
-                window.threeCubes[i].quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+                // Check if position and rotation are valid before setting
+                if (position && rotation) {
+                    window.threeCubes[i].position.set(position.x, position.y, position.z);
+                    window.threeCubes[i].quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+                } else {
+                    console.warn(`Invalid position or rotation at index ${i}`);
+                }
             }
         }
 
-        // - TO DO
-        logEvents()
-
-
+        logEvents();
     }
 }
+
 
 
 
@@ -509,18 +511,6 @@ function makeScene() {
 
 }
 
-function getWorldVertices(mesh) {
-    const vertices = [];
-    const vertex = new THREE.Vector3();
-
-    for (let i = 0; i < mesh.geometry.attributes.position.count; i++) {
-        vertex.fromBufferAttribute(mesh.geometry.attributes.position, i);
-        vertex.applyMatrix4(mesh.matrixWorld); // Transform the vertex to world space
-        vertices.push(vertex.x, vertex.y, vertex.z);
-    }
-
-    return vertices;
-}
 
 
 function addPhysics(mesh, geometry, density, position = {x:0,y:0,z:0} , rotation = {x:0,y:0,z:0}, scale=1) {
@@ -568,41 +558,87 @@ function smoothHeightData(heightData, windowSize = 3) {
 
 let ampFactor = 1.1
 
+
 function makeMesh(texture) {
 
-    const geometry = new THREE.PlaneGeometry(imageWidth, imageHeight, imageWidth - 1, imageHeight - 1);
+    // Step 1: Remove the old mesh's rigid body and collider from the physics world
 
+
+    
+    if (meshGroup) {
+        // Remove the old mesh from the scene
+        scene.remove(meshGroup);
+        
+        // Remove the old rigid body and mesh from the arrays
+        const meshIndex = window.threeCubes.indexOf(meshGroup);
+        if (meshIndex > -1) {
+            window.threeCubes.splice(meshIndex, 1);
+            window.rigidBodies.splice(meshIndex, 1); // Assuming rigidBodies and threeCubes are synchronized
+        }
+
+        meshGroup = undefined;
+    }
+
+    const geometry = new THREE.PlaneGeometry(imageWidth, imageHeight, imageWidth - 1, imageHeight - 1);
     geometry.rotateX(-Math.PI / 2);
 
     const originalVertices = geometry.attributes.position.array;
     const smoothedHeightData = smoothHeightData(heightData);
     for (let i = 0, j = 0, l = originalVertices.length; i < l; i++, j += 3) {
-        originalVertices[j + 1] = smoothedHeightData[i]*ampFactor;
+        originalVertices[j + 1] = smoothedHeightData[i] * ampFactor;
     }
-    if (meshGroup) {
-        scene.remove(meshGroup);
-        meshGroup = undefined;
-    }
+
     meshGroup = new THREE.Group();
     scene.add(meshGroup);
     texture.encoding = THREE.sRGBEncoding;
-    mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture })); 
+    mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture }));
     meshGroup.add(mesh);
     window.meshGroup = meshGroup
 
-    //let someDistance = -12;  
-
-    meshGroup.position.set(0,1.7,-42);
-    //meshGroup.rotation.set(-1.571,0,0);
-    meshGroup.rotation.x = 1.35
+    meshGroup.position.set(0, 1.7, -42);
+    meshGroup.rotation.x = 1.35;
 
     let sc = 1;
-    //meshGroup.scale.set(sc, sc, sc);
 
-    //addPhysics(meshGroup,geometry,20,sc)
-    // addPhysics(mesh, geometry, density, position = {x:0,y:0,z:0} , rotation = {x:0,y:0,z:0}, scale=1) {
     addPhysics(meshGroup, geometry, 20, meshGroup.position, meshGroup.rotation, sc);
 }
+
+
+// function makeMesh(texture) {
+
+//     const geometry = new THREE.PlaneGeometry(imageWidth, imageHeight, imageWidth - 1, imageHeight - 1);
+
+//     geometry.rotateX(-Math.PI / 2);
+
+//     const originalVertices = geometry.attributes.position.array;
+//     const smoothedHeightData = smoothHeightData(heightData);
+//     for (let i = 0, j = 0, l = originalVertices.length; i < l; i++, j += 3) {
+//         originalVertices[j + 1] = smoothedHeightData[i]*ampFactor;
+//     }
+//     if (meshGroup) {
+//         scene.remove(meshGroup);
+//         meshGroup = undefined;
+//     }
+//     meshGroup = new THREE.Group();
+//     scene.add(meshGroup);
+//     texture.encoding = THREE.sRGBEncoding;
+//     mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture })); 
+//     meshGroup.add(mesh);
+//     window.meshGroup = meshGroup
+
+//     //let someDistance = -12;  
+
+//     meshGroup.position.set(0,1.7,-42);
+//     //meshGroup.rotation.set(-1.571,0,0);
+//     meshGroup.rotation.x = 1.35
+
+//     let sc = 1;
+//     //meshGroup.scale.set(sc, sc, sc);
+
+//     //addPhysics(meshGroup,geometry,20,sc)
+//     // addPhysics(mesh, geometry, density, position = {x:0,y:0,z:0} , rotation = {x:0,y:0,z:0}, scale=1) {
+//     addPhysics(meshGroup, geometry, 20, meshGroup.position, meshGroup.rotation, sc);
+// }
 
 
 function addPlane(name = "plane",w=3, h=3, position={x:0,y:0,z:0}) {
@@ -630,20 +666,17 @@ function animate() {
 }
 
 function render(timeStamp, xrFrame) {
-
     if(controls) {
         //console.log("controls")
       controls.update();
     }
-
     if(stats) {
         stats.update()
     }
-
     updateRapier()
-
     renderer.render(scene, camera);
 }
+
 
 makeScene();
 
