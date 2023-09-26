@@ -30,30 +30,24 @@ has_allowed_extension() {
 # Function to create a thumbnail for an image
 
 create_thumbnail() {
-    local image_path="$1"
-    local thumbnail_path="${image_path%.*}_th.${image_path##*.}"
+    local depth_image_path="$1"
 
-    # Check if the corresponding depth image exists
-
-    # local depth_image_basename="${image_path##*/}"
-    # local depth_image_name="${depth_image_basename%.*}"
-    local depth_image_basename="${image_path##*/}"
-    local depth_image_name="${depth_image_basename%_depth.*}"
-
-    local depth_image_extension="${depth_image_basename##*.}"
-    local depth_image_path="$OUTPUT_DIR/${depth_image_name}_depth.${depth_image_extension,,}"  # Convert extension to lowercase
+    # Determine the original image path from the depth image path
+    local original_image_path="${depth_image_path%_depth.*}.${depth_image_path##*.}"
+    local thumbnail_path="${original_image_path%.*}_th.${original_image_path##*.}"
 
     if [[ -f "$depth_image_path" ]]; then
         if [[ ! -f "$thumbnail_path" ]]; then
-            echo "Creating thumbnail for $image_path..."
-            convert "$image_path" -resize '400x400>' "$thumbnail_path"
+            echo "Creating thumbnail for $original_image_path..."
+            convert "$original_image_path" -resize '400x400>' "$thumbnail_path"
         else
-            echo "Thumbnail for $image_path already exists."
+            echo "Thumbnail for $original_image_path already exists."
         fi
     else
-        echo "No depth image for $image_path. Skipping thumbnail creation."
+        echo "No depth image for $original_image_path. Skipping thumbnail creation."
     fi
 }
+
 
 
 # Loop through each file in the image directory
