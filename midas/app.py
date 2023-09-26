@@ -67,6 +67,13 @@ def upload_file():
     # Replace spaces with underscores in the filename
     file.filename = file.filename.replace(' ', '_')
 
+    # Handle filenames with multiple dots
+    parts = file.filename.split('.')
+    if len(parts) > 2:
+        filename_without_ext = '_'.join(parts[:-1])
+        extension = parts[-1]
+        file.filename = f"{filename_without_ext}.{extension}"
+
     if allowed_file(file.filename):
         ext = os.path.splitext(file.filename)[1].lower()  # Convert extension to lowercase
         if ext == ".jpeg":
@@ -95,6 +102,7 @@ def upload_file():
         })
 
     return jsonify({"error": "File type not allowed"}), 400
+
 
 
 def create_thumbnail(image_path, thumbnail_path, thumbnail_size=(128, 128)):
