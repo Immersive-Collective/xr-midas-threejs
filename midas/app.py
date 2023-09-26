@@ -47,8 +47,6 @@ def resize_image(image_path, max_dimension=1920):
     return img
 
 
-
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -70,9 +68,12 @@ def upload_file():
         file.save(filename)
         
         resize_image(filename)
-
         process_image(filename)
-
+        
+        # Create the thumbnail
+        base, ext = os.path.splitext(filename)
+        thumbnail_filename = f"{base}_th{ext}"
+        create_thumbnail(filename, thumbnail_filename)
 
         basename = os.path.basename(filename)
         depth_filename = os.path.join(app.config['OUTPUT_FOLDER'], os.path.splitext(basename)[0] + "_depth.jpg")
@@ -84,6 +85,27 @@ def upload_file():
         })
 
     return jsonify({"error": "File type not allowed"}), 400
+
+def create_thumbnail(image_path, thumbnail_path, thumbnail_size=(128, 128)):
+    """Creates a thumbnail of the image preserving its aspect ratio."""
+    img = cv2.imread(image_path)
+    
+    # Calculate aspect ratio and dimensions
+    width, height = img.shape[1], img.shape[0]
+    new_width, new_height = thumbnail_size
+    aspect = width / float(height)
+    if aspect > 1:  # landscape
+        new_width = thumbnail_size[0]
+        new_height = int(new_width / aspect)
+    else:  # portrait and square
+        new_height = thumbnail_size[1]
+        new_width = int(new_height * aspect)
+
+    # Resize the image
+    thumbnail = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_AREA)
+
+    # Save the thumbnail
+    cv2.imwrite(thumbnail_path, thumbnail)
 
 
 def process_image(filename):
@@ -160,8 +182,14 @@ def uploaded_file(filename):
 @app.route('/get-images')
 def get_images():
     files = os.listdir(app.config['UPLOAD_FOLDER'])
-    files = [file for file in files if file.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS]
-    return jsonify({"images": files})    
+    
+    # Filter only thumbnails and allowed extensions
+    files = [file for file in files 
+             if file.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS 
+             and file.rsplit('.', 2)[0].endswith('_th')]
+    
+    return jsonify({"images": files})
+ 
 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):

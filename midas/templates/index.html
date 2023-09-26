@@ -475,8 +475,9 @@ function onXRSessionEnd() {
 }
 
 function initializeThreeJS(uploadedImageUrl, depthImageUrl) {
-    removeAllCubes();
     
+    removeAllCubes();
+
     loadDepthImage(uploadedImageUrl, depthImageUrl);
 }
 
@@ -829,54 +830,40 @@ depthImg.onerror = function() {
 
 
 /* Gallery */
-
 function loadGallery() {
     fetch("/get-images")
     .then(response => response.json())
     .then(data => {
         let gallery = document.getElementById('galleryContainer');
         gallery.innerHTML = '';  // clear the gallery
-
         data.images.forEach(img => {
+            let originalImg = img.replace('_th.', '.');  // get the name of the original image
             let imgElem = document.createElement('img');
-            imgElem.src = "/uploads/" + img;
+            imgElem.src = "/uploads/" + originalImg;  // set the src to the original image
+            imgElem.dataset.thumbnailSrc = "/uploads/" + img;  // store the thumbnail src in a data attribute
             imgElem.style.width = '100%';
             imgElem.style.cursor = 'pointer';
             imgElem.onclick = function() {
-                closeGallery(imgElem.src);
+                getGallery(imgElem.dataset.thumbnailSrc);
             };
             gallery.appendChild(imgElem);
         });
-        
         document.getElementById('galleryOverlay').style.display = 'block';
     });
 }
 
-//const convertToDepthUrl = url => url.replace(/(.*\/)([^\/]+)(\.[^\.]+)$/, '$1$2_depth$3');
-//const convertToDepthUrl = url => url.replace(/(.*\/)uploads(\/[^\/]+)(\.[^\.]+)$/, '$1outputs$2_depth$3');
-
-
-function closeGallery(url) {
-    document.getElementById('preview').src = url;
-
-    let depth_image = url.replace(/(.*\/)uploads(\/[^\/]+)(\.[^\.]+)$/, '$1outputs$2_depth$3');
-
+function getGallery(thumbnailUrl) {
+    let originalImgUrl = thumbnailUrl.replace('_th.', '.');  // get the name of the original image
+    document.getElementById('preview').src = originalImgUrl;
+    let depth_image = originalImgUrl.replace(/(.*\/)uploads(\/[^\/]+)(\.[^\.]+)$/, '$1outputs$2_depth$3');
     document.getElementById('galleryOverlay').style.display = 'none';
-    
-    // console.log(url, depth_image)
-
     document.getElementById('depth-image').src = depth_image;
-
-
     removeAllCubes();
-
-    loadDepthImage(url, depth_image);
-
-
+    loadDepthImage(originalImgUrl, depth_image);
 }
-
 window.loadGallery = loadGallery;
 window.closeGallery = closeGallery;
+
 
 
 </script>
