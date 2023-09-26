@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Directory with original images
-IMAGE_DIR="$1"
+# Get the absolute path of the provided directory
+IMAGE_DIR=$(realpath "$1")
+
 # Check if directory is provided
 if [[ -z "$IMAGE_DIR" ]]; then
     echo "Please provide the path to the directory with images as an argument."
