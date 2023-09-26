@@ -859,6 +859,8 @@ function getGallery(originalUrl) {
     let originalExtension = originalUrl.split('.').pop();  // Get the original file extension
     let depth_image = originalUrl.replace(/(.*\/)uploads(\/[^\/]+)\.[^\.]+$/, `$1outputs$2_depth.${originalExtension.toLowerCase()}`);
     
+    console.log("depth_image =>",depth_image)
+
     document.getElementById('galleryOverlay').style.display = 'none';
     document.getElementById('depth-image').src = depth_image;
     removeAllCubes();
