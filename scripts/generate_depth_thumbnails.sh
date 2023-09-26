@@ -1,9 +1,16 @@
 #!/bin/bash
 
-# Directory with original images
-IMAGE_DIR="./uploads"
+# Get the absolute path of the provided directory
+IMAGE_DIR=$(realpath "$1")
+
+# Check if directory is provided
+if [[ -z "$IMAGE_DIR" ]]; then
+    echo "Please provide the path to the directory with images as an argument."
+    exit 1
+fi
+
 # Directory with output images
-OUTPUT_DIR="./outputs"
+OUTPUT_DIR="${IMAGE_DIR%/uploads}/outputs"
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS="jpg jpeg png webp heic bmp JPG JPEG PNG WEBP HEIC BMP"
