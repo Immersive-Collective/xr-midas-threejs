@@ -33,10 +33,9 @@ create_thumbnail() {
     local thumbnail_path="${image_path%.*}_th.${image_path##*.}"
 
     # Check if the corresponding depth image exists
-    local depth_image_basename="${image_path##*/}"
-    local depth_image_name="${depth_image_basename%.*}"
-    local depth_image_extension="${depth_image_basename##*.}"
-    local depth_image_path="$OUTPUT_DIR/${depth_image_name}_depth.${depth_image_extension,,}"  # Convert extension to lowercase
+    local depth_image_filename="${image_path##*/}"
+    local depth_image_extension="${depth_image_filename##*.}"
+    local depth_image_path="$OUTPUT_DIR/${depth_image_filename%.*}_depth.${depth_image_extension,,}"
 
     if [[ -f "$depth_image_path" ]]; then
         if [[ ! -f "$thumbnail_path" ]]; then
@@ -50,8 +49,8 @@ create_thumbnail() {
     fi
 }
 
-
 # Loop through each file in the image directory
+IFS=$(echo -en "\n\b")
 for filepath in "$IMAGE_DIR"/*; do
     if [[ -f "$filepath" ]] && has_allowed_extension "$filepath"; then
         create_thumbnail "$filepath"
