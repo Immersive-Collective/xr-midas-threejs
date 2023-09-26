@@ -18,6 +18,9 @@
 
 <script type="module">
 
+const container = document.createElement('div');
+document.body.appendChild(container);
+
 import * as THREE from 'three';
 import Stats from 'three/addons/libs/stats.module.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -25,6 +28,13 @@ import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+/* Colors */
+import * as cols from '{{ url_for('static', filename='libs/colors/pastels.js') }}';
+
+/* Rapier */
+import RAPIER from '{{ url_for('static', filename='libs/rapier3d-compat/rapier.es.js') }}';
+
 
 let stats;
 let camera, controls, scene, renderer, meshGroup
@@ -39,17 +49,18 @@ let conS = [];
 let bgColor =  Math.random()*1000000000;
 const colorsSet = [0xA8E6CE,0xDCEDC2,0xFFD3B5,0xFFAAA6,0xFF8C94]
 
+let randmFactor = 0.5;
+let ballBaseSize = 0.3
 
-const container = document.createElement('div');
-document.body.appendChild(container);
+let gravity = { x: 0.0, y: -0.2, z: 0.0 };
+let ampFactor = 1.2
+
+let colsVariantsIdx = 8
+
+window.gravity = gravity
+window.colsVariantsIdx = colsVariantsIdx;
 
 const clock = new THREE.Clock();
-
-/* Colors */
-import * as cols from '{{ url_for('static', filename='libs/colors/pastels.js') }}';
-
-/* Rapier */
-import RAPIER from '{{ url_for('static', filename='libs/rapier3d-compat/rapier.es.js') }}';
 
 let groundHeight = 0;
 let eventQueue;
@@ -64,7 +75,6 @@ async function run_physics() {
 
     console.log(RAPIER)
 
-    let gravity = { x: 0.0, y: -1.4, z: 0.0 };
     let world = new RAPIER.World(gravity);
     const eventQueue = new RAPIER.EventQueue(true);
 
@@ -98,7 +108,7 @@ async function run_physics() {
 
                 const trimesh = new RAPIER.TriMesh(vertices, indices);
 
-                console.log('TriMesh created successfully', trimesh);
+                // console.log('TriMesh created successfully', trimesh);
 
                 // console.log('Vertices length:', vertices.length);
                 // console.log('Indices length:', indices.length);
@@ -129,6 +139,9 @@ async function run_physics() {
 RAPIER.init().then(() => {
     run_physics();
 });
+
+
+
 
 /* Shaders */
 
@@ -183,6 +196,9 @@ window.addRainbow = addRainbow;
 
 
 
+
+
+
 function dropSomething() {
   if(Math.random()*1 > 0.3) {
     shootBallFromTop()
@@ -209,7 +225,7 @@ function addBallFromCamera(radius, color, offsetY = 0.2, density = 1) {
 
 
     // Speed factor to apply to the camera direction for the ball velocity
-    const speedFactor = 40;
+    const speedFactor = 100;
     // Create the rigid body description and set its properties
     let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
                           .setTranslation(cameraPosition.x, cameraPosition.y, cameraPosition.z)
@@ -241,43 +257,30 @@ window.addBallFromCamera = addBallFromCamera;
 
 function shootBallFromTop() {
 
+    // Safeguard against undefined myRapierWorld
+    if (typeof myRapierWorld === 'undefined' || !myRapierWorld) return;
 
-    let ballSize = 0.4 + Math.random()*0.3
+    let ballSize = ballBaseSize + Math.random() * randmFactor;
 
-    let rf = 5
-    let startY = 40
-    let x = Math.random()*rf*4 - Math.random()*rf*4 
-    let y = startY + Math.random()*rf - Math.random()*rf 
-    let z = -32 + Math.random()*rf - Math.random()*rf 
+    let rf = 5;
+    let startY = 40;
+    let x = Math.random() * rf * 4 - Math.random() * rf * 4;
+    let y = startY + Math.random() * rf - Math.random() * rf;
+    let z = -40 + Math.random() * rf - Math.random() * rf;
 
-    //let color = cols.pastelColors[Math.floor(Math.random()*cols.pastelColors.length)];
-    let idx = Math.floor(Math.random()*cols.pinkOrangeColors.length)
-    let color = cols.pinkOrangeColors[idx]; 
-    //console.log(idx)
-    
-    //console.log(color)
+    let idx = Math.floor(Math.random() * 32);
+    let color = cols.variants[window.colsVariantsIdx][idx];
 
-    if(!myRapierWorld) return;
-
-
-    addBallFromTop(
-      ballSize, 
-      color, 
-      0.1, 
-      10, 
-      {x:x, y:y, z:z})
-
-    //au.playAudioFromFile(au.findSounds(audioData, "kick2")[0])
-    
-    // Your code here
+    addBallFromTop(ballSize, color, 0.1, 10, { x: x, y: y, z: z });
 }
 window.shootBallFromTop = shootBallFromTop;
 
 
 
+
 function addBallFromTop(radius, color, offsetY = 0.2, density = 1, position) {
 
-    const speedFactor = 10 + Math.random() * 10;
+    const speedFactor = 5 + Math.random() * 5;
 
     // Ensure that texturesCache is defined and not empty
     // if (!texturesCache || texturesCache.length === 0) {
@@ -299,7 +302,7 @@ function addBallFromTop(radius, color, offsetY = 0.2, density = 1, position) {
     let rigidBody = myRapierWorld.createRigidBody(rigidBodyDesc);
 
     // Sphere Core
-    const sphereGeometry = new THREE.SphereGeometry(radius,16,12);
+    const sphereGeometry = new THREE.SphereGeometry(radius);
     const myBallMaterial = new THREE.MeshStandardMaterial({ 
 //        map: texture,
         color: color,
@@ -309,7 +312,7 @@ function addBallFromTop(radius, color, offsetY = 0.2, density = 1, position) {
         transparent: true,
 //        bumpMap: texture,
         bumpScale: 1,
-        opacity: 0.75
+        opacity: 1
     });
     const sphereMesh = new THREE.Mesh(sphereGeometry, myBallMaterial);
     scene.add(sphereMesh);
@@ -340,11 +343,11 @@ function shootBall() {
 
     console.log("shootBall - Spacebar released!");
 
-    let ballSize = 0.5 + Math.random()*0.1;
+    let ballSize = 1 + Math.random()*0.1;
 
     // addBallFromCamera(radius, color, offsetY = 0.2, density = 1) {
     
-    addBallFromCamera(ballSize, colorsSet[Math.floor(Math.random()*colorsSet.length)], 0.1, 4)
+    addBallFromCamera(ballSize, colorsSet[Math.floor(Math.random()*colorsSet.length)], 0.1, 200)
     
     //addBallFromShotLineEnd(ballSize, colorsSet[Math.floor(Math.random()*colorsSet.length)], 0.1, 1)
     //au.playAudioFromFile(au.findSounds(audioData, "kick2")[0])
@@ -641,7 +644,7 @@ function smoothHeightData(heightData, windowSize = 0) {
     return smoothedData;
 }
 
-let ampFactor = 1.7
+
 
 
 function makeMesh(texture) {
@@ -676,13 +679,15 @@ function makeMesh(texture) {
 
     meshGroup = new THREE.Group();
     scene.add(meshGroup);
+
     texture.encoding = THREE.sRGBEncoding;
     mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture }));
     meshGroup.add(mesh);
+    
     window.meshGroup = meshGroup
 
     meshGroup.position.set(0, 1.7, -42);
-    meshGroup.rotation.x = 1.35;
+    meshGroup.rotation.x = 1.15;
 
     let sc = 1;
 
@@ -865,7 +870,7 @@ function getGallery(originalUrl) {
     // Since all depth images are in .jpg format
     let depth_image = originalUrl.replace(/(.*\/)uploads(\/[^\/]+)\.[^\.]+$/, `$1outputs$2_depth.jpg`);
     
-    console.log("depth_image =>", depth_image)
+    //console.log("depth_image =>", depth_image)
 
     document.getElementById('galleryOverlay').style.display = 'none';
     document.getElementById('depth-image').src = depth_image;
