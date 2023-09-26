@@ -838,13 +838,14 @@ function loadGallery() {
         gallery.innerHTML = '';  // clear the gallery
         data.images.forEach(img => {
             let originalImg = img.replace('_th.', '.');  // get the name of the original image
+
             let imgElem = document.createElement('img');
-            imgElem.src = "/uploads/" + originalImg;  // set the src to the original image
-            imgElem.dataset.thumbnailSrc = "/uploads/" + img;  // store the thumbnail src in a data attribute
+            imgElem.src = "/uploads/" + img;  // set the src to the thumbnail
+            imgElem.dataset.originalSrc = "/uploads/" + originalImg;  // store the original image src in a data attribute
             imgElem.style.width = '100%';
             imgElem.style.cursor = 'pointer';
             imgElem.onclick = function() {
-                getGallery(imgElem.dataset.thumbnailSrc);
+                getGallery(imgElem.dataset.originalSrc);
             };
             gallery.appendChild(imgElem);
         });
@@ -852,17 +853,20 @@ function loadGallery() {
     });
 }
 
-function getGallery(thumbnailUrl) {
-    let originalImgUrl = thumbnailUrl.replace('_th.', '.');  // get the name of the original image
-    document.getElementById('preview').src = originalImgUrl;
-    let depth_image = originalImgUrl.replace(/(.*\/)uploads(\/[^\/]+)(\.[^\.]+)$/, '$1outputs$2_depth$3');
+function getGallery(originalUrl) {
+    document.getElementById('preview').src = originalUrl;
+
+    let depth_image = originalUrl.replace(/(.*\/)uploads(\/[^\/]+)(\.[^\.]+)$/, '$1outputs$2_depth$3');
+    
     document.getElementById('galleryOverlay').style.display = 'none';
     document.getElementById('depth-image').src = depth_image;
     removeAllCubes();
-    loadDepthImage(originalImgUrl, depth_image);
+    loadDepthImage(originalUrl, depth_image);
 }
+
 window.loadGallery = loadGallery;
 window.closeGallery = closeGallery;
+
 
 
 
