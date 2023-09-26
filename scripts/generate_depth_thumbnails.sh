@@ -34,8 +34,12 @@ create_thumbnail() {
     local thumbnail_path="${image_path%.*}_th.${image_path##*.}"
 
     # Check if the corresponding depth image exists
+
+    # local depth_image_basename="${image_path##*/}"
+    # local depth_image_name="${depth_image_basename%.*}"
     local depth_image_basename="${image_path##*/}"
-    local depth_image_name="${depth_image_basename%.*}"
+    local depth_image_name="${depth_image_basename%_depth.*}"
+
     local depth_image_extension="${depth_image_basename##*.}"
     local depth_image_path="$OUTPUT_DIR/${depth_image_name}_depth.${depth_image_extension,,}"  # Convert extension to lowercase
 
