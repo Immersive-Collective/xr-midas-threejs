@@ -765,6 +765,8 @@ makeScene();
 
 function handleUploadFormSubmission(e) {
 
+    closeGallery();
+
     const formData = new FormData(document.getElementById('uploadForm'));
 
     fetch('/upload', {
