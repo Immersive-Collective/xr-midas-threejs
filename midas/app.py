@@ -50,6 +50,7 @@ def resize_image(image_path, max_dimension=1920):
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
 @app.route('/')
 def index():
     return render_template('index.html')  # Note: Renamed from upload.html to index.html
@@ -64,14 +65,20 @@ def upload_file():
         return jsonify({"error": "No file selected"}), 400
 
     if file and allowed_file(file.filename):
-        filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        ext = os.path.splitext(file.filename)[1].lower()  # Convert extension to lowercase
+        if ext == ".jpeg":
+            ext = ".jpg"
+        base_name = os.path.splitext(file.filename)[0]
+        filename = os.path.join(app.config['UPLOAD_FOLDER'], base_name + ext)
         file.save(filename)
-        
+
         resize_image(filename)
         process_image(filename)
         
         # Create the thumbnail
         base, ext = os.path.splitext(filename)
+        if ext.lower() == ".jpeg":
+            ext = ".jpg"
         thumbnail_filename = f"{base}_th{ext}"
         create_thumbnail(filename, thumbnail_filename)
 
