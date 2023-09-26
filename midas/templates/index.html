@@ -867,6 +867,12 @@ function getGallery(originalUrl) {
     loadDepthImage(originalUrl, depth_image);
 }
 
+function closeGallery() {
+
+    document.getElementById('galleryOverlay').style.display = 'none';
+    
+}
+
 
 window.loadGallery = loadGallery;
 window.closeGallery = closeGallery;
