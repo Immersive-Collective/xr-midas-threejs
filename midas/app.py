@@ -157,6 +157,12 @@ def outputed_file(filename):
 def uploaded_file(filename):
     return send_from_directory(os.path.abspath(app.config['UPLOAD_FOLDER']), filename)
 
+@app.route('/get-images')
+def get_images():
+    files = os.listdir(app.config['UPLOAD_FOLDER'])
+    files = [file for file in files if file.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS]
+    return jsonify({"images": files})    
+
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)

@@ -475,6 +475,8 @@ function onXRSessionEnd() {
 }
 
 function initializeThreeJS(uploadedImageUrl, depthImageUrl) {
+    removeAllCubes();
+    
     loadDepthImage(uploadedImageUrl, depthImageUrl);
 }
 
@@ -574,6 +576,21 @@ function makeScene() {
 
 }
 
+function removeAllCubes() {
+    for (let i = 0; i < window.threeCubes.length; i++) {
+        scene.remove(window.threeCubes[i]);
+    }
+    
+    // Remove from Rapier
+    for (let i = 0; i < window.rigidBodies.length; i++) {
+        myRapierWorld.removeRigidBody(window.rigidBodies[i]);
+    }
+    
+    // Clear arrays
+    window.threeCubes = [];
+    window.rigidBodies = [];
+}
+window.removeAllCubes = removeAllCubes;
 
 
 function addPhysics(mesh, geometry, density, position = {x:0,y:0,z:0} , rotation = {x:0,y:0,z:0}, scale=1) {
@@ -625,8 +642,6 @@ let ampFactor = 1.7
 function makeMesh(texture) {
 
     // Step 1: Remove the old mesh's rigid body and collider from the physics world
-
-
 
     if (meshGroup) {
         // Remove the old mesh from the scene
@@ -813,13 +828,79 @@ depthImg.onerror = function() {
 };
 
 
+/* Gallery */
+
+function loadGallery() {
+    fetch("/get-images")
+    .then(response => response.json())
+    .then(data => {
+        let gallery = document.getElementById('galleryContainer');
+        gallery.innerHTML = '';  // clear the gallery
+
+        data.images.forEach(img => {
+            let imgElem = document.createElement('img');
+            imgElem.src = "/uploads/" + img;
+            imgElem.style.width = '100%';
+            imgElem.style.cursor = 'pointer';
+            imgElem.onclick = function() {
+                closeGallery(imgElem.src);
+            };
+            gallery.appendChild(imgElem);
+        });
+        
+        document.getElementById('galleryOverlay').style.display = 'block';
+    });
+}
+
+//const convertToDepthUrl = url => url.replace(/(.*\/)([^\/]+)(\.[^\.]+)$/, '$1$2_depth$3');
+//const convertToDepthUrl = url => url.replace(/(.*\/)uploads(\/[^\/]+)(\.[^\.]+)$/, '$1outputs$2_depth$3');
+
+
+function closeGallery(url) {
+    document.getElementById('preview').src = url;
+
+    let depth_image = url.replace(/(.*\/)uploads(\/[^\/]+)(\.[^\.]+)$/, '$1outputs$2_depth$3');
+
+    document.getElementById('galleryOverlay').style.display = 'none';
+    
+    // console.log(url, depth_image)
+
+    document.getElementById('depth-image').src = depth_image;
+
+
+    removeAllCubes();
+
+    loadDepthImage(url, depth_image);
+
+
+}
+
+window.loadGallery = loadGallery;
+window.closeGallery = closeGallery;
+
+
 </script>
-    <div id="ui" style="padding-bottom: 50px;">
-        <!-- Add padding to account for the fixed button -->
-        <div id="imageContainer">
-            <img class="im" id="preview" alt="Image Preview" src="{{ url_for('static', filename='images/placeholder.png') }}">
-            <img class="im" id="depth-image" alt="Depth Image" src="{{ url_for('static', filename='images/placeholder.png') }}">
-        </div>
+
+
+<div id="ui" style="padding-bottom: 50px;">
+    <!-- Add padding to account for the fixed button -->
+    <div id="imageContainer">
+        <img class="im" id="preview" alt="Image Preview" src="{{ url_for('static', filename='images/placeholder.png') }}">
+        <img class="im" id="depth-image" alt="Depth Image" src="{{ url_for('static', filename='images/placeholder.png') }}">
+    </div>
+    <div id="buttonContainer" style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+
+        <a href="#" onclick="loadGallery()" class="github-corner" rel="noopener noreferrer" aria-label="View source on GitHub">
+           <!--  <img src="{{ url_for('static', filename='images/github-mark/github-mark-white.svg') }}" alt="GitHub icon" class="github-icon"> -->
+            Gallery
+        </a>
+
+        <a href="https://github.com/Immersive-Collective/xr-midas-threejs" class="gallery-corner" target="_blank" rel="noopener noreferrer" aria-label="View source on GitHub">
+
+            <img src="{{ url_for('static', filename='images/github-mark/github-mark-white.svg') }}" alt="GitHub icon" class="github-icon">
+        </a>
+        
+
         <form id="uploadForm">
             <label for="file-upload" class="custom-file-upload">
                 Upload Image
@@ -827,9 +908,20 @@ depthImg.onerror = function() {
             <input id="file-upload" type="file" name="file" required style="display:none;" />
         </form>
     </div>
-    <a href="https://github.com/Immersive-Collective/xr-midas-threejs" class="github-corner" target="_blank" rel="noopener noreferrer" aria-label="View source on GitHub">
-        <img src="{{ url_for('static', filename='images/github-mark/github-mark-white.svg') }}" alt="GitHub icon" class="github-icon">
-    </a>
+</div>
+
+<div id="galleryOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0, 0, 0, 0.8);">
+    <div id="galleryContainer" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 50px; overflow-y: scroll; height: 80%; margin: 5% auto;">
+        <!-- Images will be loaded here from Flask -->
+    </div>
+
+</div>
+
+
+
+
+
+
 </body>
 
 </html>

@@ -28,7 +28,7 @@ body {
     border: 0;
     padding: 0;
     z-index: 100;
-    pointer-events: all;
+    pointer-events: none;
 }
 
 #upload {
@@ -53,6 +53,14 @@ body {
     }
 }
 
+.gallery-corner {
+    position: fixed;
+    top: 10px;
+    right: 100px;
+    z-index: 1000; /* Ensure it's above other content */
+}
+
+
 .github-corner {
     position: fixed;
     top: 10px;
@@ -61,7 +69,7 @@ body {
 }
 
 .github-icon {
-    width: 40px; /* Adjust based on your preference */
+    width: 25px; /* Adjust based on your preference */
     height: auto;
     transition: opacity 0.3s;
 }
@@ -127,26 +135,29 @@ a:active {
 
 #imageContainer {
     bottom: 0;
+    pointer-events: none;
 }
 
-
+#buttonContainer {
+    pointer-events: all;
+}
 
 .custom-file-upload {
     display: block;
-    background-color: #4CAF50; /* green background color */
-    color: white; /* white text */
+    background-color: #4CAF50;
+    color: white;
     padding: 1rem;
     text-align: center;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 3rem; /* make the text bigger for mobile readability */
-    width: 100%; /* full width for easier tapping on mobile */
+    font-size: 2rem;
+    /* width: 100%; */
     border: none;
     margin: 0;
-    position: fixed; /* fix position at the bottom */
-    bottom: 0; /* position it at the bottom */
-    left: 0; /* starting from the left */
-    z-index: 1000; /* place it on top of other elements */
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    z-index: 1000;
 }
 
 
