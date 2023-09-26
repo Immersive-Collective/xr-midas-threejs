@@ -45,6 +45,9 @@ document.body.appendChild(container);
 
 const clock = new THREE.Clock();
 
+/* Colors */
+import * as cols from '{{ url_for('static', filename='libs/colors/pastels.js') }}';
+
 /* Rapier */
 import RAPIER from '{{ url_for('static', filename='libs/rapier3d-compat/rapier.es.js') }}';
 
@@ -246,9 +249,16 @@ function shootBallFromTop() {
     let y = startY + Math.random()*rf - Math.random()*rf 
     let z = -32 + Math.random()*rf - Math.random()*rf 
 
+    //let color = cols.pastelColors[Math.floor(Math.random()*cols.pastelColors.length)];
+    let idx = Math.floor(Math.random()*cols.pinkOrangeColors.length)
+    let color = cols.pinkOrangeColors[idx];
+    console.log(idx)
+    
+    //console.log(color)
+
     addBallFromTop(
       ballSize, 
-      colorsSet[Math.floor(Math.random()*colorsSet.length)], 
+      color, 
       0.1, 
       10, 
       {x:x, y:y, z:z})
@@ -288,14 +298,14 @@ function addBallFromTop(radius, color, offsetY = 0.2, density = 1, position) {
     const sphereGeometry = new THREE.SphereGeometry(radius,16,12);
     const myBallMaterial = new THREE.MeshStandardMaterial({ 
 //        map: texture,
-        color: Math.random()*16000000,
+        color: color,
         wireframe: false,
         metalness: 0.35,
-        roughness: 0.4,
+        roughness: 0.1,
         transparent: true,
 //        bumpMap: texture,
         bumpScale: 1,
-        opacity: 1
+        opacity: 0.75
     });
     const sphereMesh = new THREE.Mesh(sphereGeometry, myBallMaterial);
     scene.add(sphereMesh);
