@@ -1,16 +1,8 @@
 # xr-midas-threejs
 # XR 2.5: Flask Meets Three.js
-
-<img width="1728" alt="Screenshot 2023-09-26 at 12 11 50" src="https://github.com/Immersive-Collective/xr-midas-threejs/assets/27820237/98e9d6d1-d7c3-4657-b55c-ed42dd90e7e0">
-
-
-
 https://github.com/Immersive-Collective/xr-midas-threejs/assets/27820237/d922d189-532f-4d3f-a20a-443a8e46f810
 
-
-
-
-# Demos
+# Older Demos
 https://github.com/Immersive-Collective/xr-midas-threejs/assets/27820237/fba5d4ec-add5-4ce4-840c-fe2858364474
 https://github.com/Immersive-Collective/xr-midas-threejs/assets/27820237/cac396c4-49f9-45c3-83ca-9fe7632fb8b1
 
