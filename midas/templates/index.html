@@ -241,6 +241,7 @@ window.addBallFromCamera = addBallFromCamera;
 
 function shootBallFromTop() {
 
+
     let ballSize = 0.4 + Math.random()*0.3
 
     let rf = 5
@@ -255,6 +256,9 @@ function shootBallFromTop() {
     //console.log(idx)
     
     //console.log(color)
+
+    if(!myRapierWorld) return;
+
 
     addBallFromTop(
       ballSize, 
