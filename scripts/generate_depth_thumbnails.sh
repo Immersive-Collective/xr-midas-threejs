@@ -1,8 +1,7 @@
 #!/bin/bash
 
-# Get the absolute path of the provided directory
-IMAGE_DIR=$(realpath "$1")
-
+# Directory with original images
+IMAGE_DIR="$1"
 # Check if directory is provided
 if [[ -z "$IMAGE_DIR" ]]; then
     echo "Please provide the path to the directory with images as an argument."
@@ -33,10 +32,8 @@ create_thumbnail() {
     local thumbnail_path="${image_path%.*}_th.${image_path##*.}"
 
     # Check if the corresponding depth image exists
-    local depth_image_basename="${image_path##*/}"
-    local depth_image_name="${depth_image_basename%.*}"
-    local depth_image_extension="${depth_image_basename##*.}"
-    local depth_image_path="$OUTPUT_DIR/${depth_image_name}_depth.${depth_image_extension,,}"  # Convert extension to lowercase
+    local depth_image_path="$OUTPUT_DIR/${image_path##*/}"
+    depth_image_path="${depth_image_path%.*}_depth.${depth_image_path##*.}"
 
     if [[ -f "$depth_image_path" ]]; then
         if [[ ! -f "$thumbnail_path" ]]; then
@@ -49,7 +46,6 @@ create_thumbnail() {
         echo "No depth image for $image_path. Skipping thumbnail creation."
     fi
 }
-
 
 # Loop through each file in the image directory
 for filepath in "$IMAGE_DIR"/*; do
