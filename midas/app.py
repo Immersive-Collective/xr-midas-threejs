@@ -64,7 +64,10 @@ def upload_file():
     if file.filename == '':
         return jsonify({"error": "No file selected"}), 400
 
-    if file and allowed_file(file.filename):
+    # Replace spaces with underscores in the filename
+    file.filename = file.filename.replace(' ', '_')
+
+    if allowed_file(file.filename):
         ext = os.path.splitext(file.filename)[1].lower()  # Convert extension to lowercase
         if ext == ".jpeg":
             ext = ".jpg"
@@ -92,6 +95,7 @@ def upload_file():
         })
 
     return jsonify({"error": "File type not allowed"}), 400
+
 
 def create_thumbnail(image_path, thumbnail_path, thumbnail_size=(128, 128)):
     """Creates a thumbnail of the image preserving its aspect ratio."""
