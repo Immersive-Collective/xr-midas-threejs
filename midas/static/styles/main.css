@@ -1,5 +1,5 @@
+/* Reset & Base Styles */
 body {
-    display: block;
     font-family: Helvetica, Arial, sans-serif;
     margin: 0;
     padding: 0;
@@ -7,106 +7,10 @@ body {
     color: #333;
     line-height: 1.6;
     font-size: 16px;
+    user-select: none;  
     -webkit-user-select: none;  /* Safari */
     -moz-user-select: none;     /* Firefox */
     -ms-user-select: none;      /* IE/Edge */
-    user-select: none;  
-}
-
-.im {
-    max-width: 20%;
-    height: auto;
-}
-
-
-#ui {
-    position: absolute;
-    display: block;
-    left: 0;
-    top: 0;
-    margin: 0;
-    border: 0;
-    padding: 0;
-    z-index: 100;
-    pointer-events: none;
-}
-
-#upload {
-    position: absolute;
-    right: 0;
-    top: 0;
-    display: block;
-    background: none;
-    padding: 1rem;
-    pointer-events: all;
-}
-
-@keyframes pulsate {
-    0% {
-        opacity: 0.15;
-    }
-    50% {
-        opacity: 1;
-    }
-    100% {
-        opacity: 0.15;
-    }
-}
-
-.gallery-corner {
-    position: fixed;
-    top: 10px;
-    right: 100px;
-    z-index: 1000; /* Ensure it's above other content */
-}
-
-
-.github-corner {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 1000; /* Ensure it's above other content */
-}
-
-.github-icon {
-    width: 25px; /* Adjust based on your preference */
-    height: auto;
-    transition: opacity 0.3s;
-}
-
-.github-corner:hover .github-icon {
-    opacity: 0.7;
-}
-
-
-.pulsating-image {
-    animation: pulsate 0.15s infinite; /* 2s is the duration of one cycle, adjust as needed */
-}
-
-
-form#uploadForm {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-input[type="file"] {
-    padding: 10px;
-    cursor: pointer;
-}
-
-input[type="submit"] {
-    padding: 10px 15px;
-    background-color: #007BFF;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-input[type="submit"]:hover {
-    background-color: #0056b3;
 }
 
 a {
@@ -132,6 +36,30 @@ a:active {
     background-color: #2980b9;
 }
 
+/* Image Styles */
+.im {
+    max-width: 20%;
+    height: auto;
+}
+
+.pulsating-image {
+    animation: pulsate 0.15s infinite;
+}
+
+@keyframes pulsate {
+    0% { opacity: 0.15; }
+    50% { opacity: 1; }
+    100% { opacity: 0.15; }
+}
+
+/* UI Layout */
+#ui {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 100;
+    pointer-events: none;
+}
 
 #imageContainer {
     bottom: 0;
@@ -142,6 +70,92 @@ a:active {
     pointer-events: all;
 }
 
+#upload {
+    position: absolute;
+    right: 0;
+    top: 0;
+    background: none;
+    padding: 1rem;
+    pointer-events: all;
+}
+
+/* Button & Icon Styles */
+.github-corner, .gallery-corner {
+    position: fixed;
+    top: 10px;
+    z-index: 1000; /* Ensure it's above other content */
+}
+
+.github-corner { right: 10px; }
+
+
+.gallery-corner { right: 100px; }
+
+
+#galleryContainer {
+    display: grid;
+    grid-template-columns: 1fr; /* Default to a single column for mobile screens */
+    gap: 10px;
+    padding: 1rem;
+    overflow-y: auto; /* Ensure gallery content is scrollable */
+    height: 80%;
+    margin: 5% auto;
+    max-width: 100%; /* Set to full width */
+    box-sizing: border-box; /* Include padding in the width calculation */
+}
+
+#galleryContainer img {
+    width: 100%; /* Makes sure the images fit inside their respective columns */
+    height: auto;
+    border-radius: 5px; /* Optional: for a rounded corner look on images */
+}
+
+#galleryOverlay {
+    position: fixed;
+    top:0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow-y: hidden; /* Prevent the entire overlay from scrolling */
+    background: rgba(0, 0, 0, 0.8); /* Assuming you want a semi-transparent background for the overlay */
+}
+
+/* 2 columns for tablets, 3 columns for desktops */
+
+
+@media (min-width: 340px) { 
+    #galleryContainer {
+        grid-template-columns: repeat(2, 2fr);
+    }
+}
+
+
+@media (min-width: 600px) { /* Breakpoint for tablets */
+    #galleryContainer {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+
+@media (min-width: 900px) { /* Breakpoint for desktops */
+    #galleryContainer {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+
+
+
+.github-icon {
+    width: 25px;
+    height: auto;
+    transition: opacity 0.3s;
+}
+
+.github-corner:hover .github-icon {
+    opacity: 0.7;
+}
+
 .custom-file-upload {
     display: block;
     background-color: #4CAF50;
@@ -150,8 +164,7 @@ a:active {
     text-align: center;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 2rem;
-    /* width: 100%; */
+    font-size: 1rem;
     border: none;
     margin: 0;
     position: fixed;
@@ -160,7 +173,9 @@ a:active {
     z-index: 1000;
 }
 
-
 .custom-file-upload:hover {
-    background-color: #45a049; /* darker green on hover */
+    background-color: #45a049;
 }
+
+
+

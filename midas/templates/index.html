@@ -4,11 +4,14 @@
 <head>
     <title>XR 2.5</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/main.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 </head>
 
 <body>
-    <script type="importmap">
-        {
+
+<script type="importmap">
+{
   "imports": {
     "three": "{{ url_for('static', filename='libs/three/build/three.module.js') }}",
     "three/addons/": "{{ url_for('static', filename='libs/three/examples/jsm/') }}"
@@ -28,14 +31,13 @@ import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
-/* Colors */
+/* Colors */ 
 import * as cols from '{{ url_for('static', filename='libs/colors/pastels.js') }}';
 
 /* Rapier */
 import RAPIER from '{{ url_for('static', filename='libs/rapier3d-compat/rapier.es.js') }}';
-
-
 let stats;
 let camera, controls, scene, renderer, meshGroup
 let mesh;
@@ -49,19 +51,22 @@ let conS = [];
 let bgColor =  Math.random()*1000000000;
 const colorsSet = [0xA8E6CE,0xDCEDC2,0xFFD3B5,0xFFAAA6,0xFF8C94]
 
+let textureCube;
+let equirectToCubeMap
+
+let envMap1 
+
 let randmFactor = 0.5;
-let ballBaseSize = 0.3
+let ballBaseSize = 0.1
 
 let gravity = { x: 0.0, y: -0.2, z: 0.0 };
 let ampFactor = 1.2
-
 let colsVariantsIdx = 8
 
 window.gravity = gravity
 window.colsVariantsIdx = colsVariantsIdx;
 
 const clock = new THREE.Clock();
-
 let groundHeight = 0;
 let eventQueue;
 
@@ -70,83 +75,57 @@ window.rigidBodies = window.rigidBodies || [];
 window.threeCubes = window.threeCubes || [];
 
 async function run_physics() {
-
     await RAPIER.init();
-
     console.log(RAPIER)
-
     let world = new RAPIER.World(gravity);
     const eventQueue = new RAPIER.EventQueue(true);
-
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath('static/libs/draco'); 
-
     const loader = new GLTFLoader();
     loader.setDRACOLoader(dracoLoader);
 
     loader.load('{{ url_for('static', filename='models/test.glb') }}', gltf => {
-
         let mesh = gltf.scene
         mesh.name = "PAD"
-
         scene.add(mesh);
         window.cube = mesh;
-
         controls.target.copy(mesh.position)
         controls.update();
 
         gltf.scene.traverse(item => {
-
             if (item.isMesh) {
-          
                 const geometry = item.geometry;
-          
+                item.material = new THREE.MeshPhongMaterial({ 
+                    transparent: true,  opacity: 0.1, 
+                    color: 0xFFFFFF, envMap: envMap1, refractionRatio: 0.98, reflectivity: 0.98
+                });
                 console.log(geometry)
-
                 const vertices = geometry.attributes.position.array;
                 const indices = geometry.index.array;
-
                 const trimesh = new RAPIER.TriMesh(vertices, indices);
-
                 // console.log('TriMesh created successfully', trimesh);
-
                 // console.log('Vertices length:', vertices.length);
                 // console.log('Indices length:', indices.length);
-
                 let groundColliderDesc = RAPIER.ColliderDesc.trimesh(trimesh)
                     .setDensity(100)
                     .setTranslation(0, groundHeight, 0)
                     .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
-
                 // this part is a kind of hack...
                 groundColliderDesc.shape.indices = indices;
                 groundColliderDesc.shape.vertices = vertices;
-
-
                 let groundCollider = world.createCollider(groundColliderDesc);
                 window.groundColliderHandle = groundCollider.handle;
-
                 window.myRapierWorld = world;
                 window.eventQueue = eventQueue;
-
             }
         })
-
     });
-
 }
-
-RAPIER.init().then(() => {
-    run_physics();
-});
-
 
 
 
 /* Shaders */
-
 function addRainbow() {
-
     const rainbowShader = {
         uniforms: {},
         vertexShader: `
@@ -176,44 +155,28 @@ function addRainbow() {
             }
         `
     };
-
-
     const rainbowMaterial = new THREE.ShaderMaterial({
         vertexShader: rainbowShader.vertexShader,
         fragmentShader: rainbowShader.fragmentShader,
         side: THREE.BackSide // Render the inside of the geometry, so we see it as a background
     });
-
     const backgroundGeometry = new THREE.BufferGeometry(2, 2);
     const backgroundMesh = new THREE.Mesh(backgroundGeometry, rainbowMaterial);
-
     scene.add(backgroundMesh);
-
 }
-
 window.addRainbow = addRainbow;
-
-
-
-
-
-
-
 function dropSomething() {
   if(Math.random()*1 > 0.3) {
     shootBallFromTop()
   }
 }
-
 function dumpMachine() {
   setInterval(()=> {
     dropSomething();
   }, 60)
 }
 
-
 function addBallFromCamera(radius, color, offsetY = 0.2, density = 1) {
-
     // Get camera position and direction
     const cameraPosition = camera.position;
     const cameraDirection = new THREE.Vector3();
@@ -222,8 +185,6 @@ function addBallFromCamera(radius, color, offsetY = 0.2, density = 1) {
     cameraDirection.y += offsetY;
     // Normalize the direction vector after applying the offset
     cameraDirection.normalize();
-
-
     // Speed factor to apply to the camera direction for the ball velocity
     const speedFactor = 100;
     // Create the rigid body description and set its properties
@@ -231,15 +192,11 @@ function addBallFromCamera(radius, color, offsetY = 0.2, density = 1) {
                           .setTranslation(cameraPosition.x, cameraPosition.y, cameraPosition.z)
                           .setLinvel(cameraDirection.x * speedFactor, cameraDirection.y * speedFactor, cameraDirection.z * speedFactor);
     let rigidBody = myRapierWorld.createRigidBody(rigidBodyDesc);
-
     //let texture = texturesCache[Math.floor(Math.random() * texturesCache.length)].texture;
-    
       // Sphere Core
       const sphereGeometry = new THREE.SphereGeometry(radius,16,12);
       //const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
-
       const myBallMaterial = new THREE.MeshBasicMaterial({ color: color });
-      
       const sphereMesh = new THREE.Mesh(sphereGeometry, myBallMaterial);
       scene.add(sphereMesh);
       // Create the collider
@@ -254,106 +211,80 @@ function addBallFromCamera(radius, color, offsetY = 0.2, density = 1) {
 }
 window.addBallFromCamera = addBallFromCamera;
 
-
 function shootBallFromTop() {
-
     // Safeguard against undefined myRapierWorld
     if (typeof myRapierWorld === 'undefined' || !myRapierWorld) return;
-
     let ballSize = ballBaseSize + Math.random() * randmFactor;
-
     let rf = 5;
     let startY = 40;
     let x = Math.random() * rf * 4 - Math.random() * rf * 4;
     let y = startY + Math.random() * rf - Math.random() * rf;
     let z = -40 + Math.random() * rf - Math.random() * rf;
-
     let idx = Math.floor(Math.random() * 32);
     let color = cols.variants[window.colsVariantsIdx][idx];
-
     addBallFromTop(ballSize, color, 0.1, 10, { x: x, y: y, z: z });
 }
 window.shootBallFromTop = shootBallFromTop;
 
-
-
-
 function addBallFromTop(radius, color, offsetY = 0.2, density = 1, position) {
-
     const speedFactor = 5 + Math.random() * 5;
-
     // Ensure that texturesCache is defined and not empty
     // if (!texturesCache || texturesCache.length === 0) {
     //     console.error("texturesCache is undefined or empty");
     //     return;
     // }
-
     // let textureData = texturesCache[Math.floor(Math.random() * texturesCache.length)];
     // if (!textureData || !textureData.texture) {
     //     console.error("Invalid texture data found in texturesCache");
     //     return;
     // }
     // let texture = textureData.texture;
-
     // Rigid Body
     let rigidBodyDesc = RAPIER.RigidBodyDesc.dynamic()
                           .setTranslation(position.x, position.y, position.z)
                           .setLinvel(0 * speedFactor, -1 * speedFactor, 0 * speedFactor);
     let rigidBody = myRapierWorld.createRigidBody(rigidBodyDesc);
-
     // Sphere Core
     const sphereGeometry = new THREE.SphereGeometry(radius);
-    const myBallMaterial = new THREE.MeshStandardMaterial({ 
-//        map: texture,
-        color: color,
-        wireframe: false,
-        metalness: 0.35,
-        roughness: 0.1,
-        transparent: true,
-//        bumpMap: texture,
-        bumpScale: 1,
-        opacity: 1
+    const myBallMaterial = new THREE.MeshPhongMaterial({ 
+        color: color, envMap:textureCube, refractionRatio: 0.98, reflectivity: 0.9
     });
+//     const myBallMaterial = new THREE.MeshStandardMaterial({ 
+// //        map: texture,
+//         color: color,
+//         wireframe: false,
+//         metalness: 0.35,
+//         roughness: 0.1,
+//         transparent: true,
+// //        bumpMap: texture,
+//         bumpScale: 1,
+//         opacity: 1
+//     });
     const sphereMesh = new THREE.Mesh(sphereGeometry, myBallMaterial);
     scene.add(sphereMesh);
-
     sphereMesh.castShadow = true;
     sphereMesh.receiveShadow = true;
-
     // Collider
     let colliderDesc = RAPIER.ColliderDesc.ball(radius).setDensity(density);
     let collider = myRapierWorld.createCollider(colliderDesc, rigidBody);
-
     // Save the collider handle
     window.colliderHandles = window.colliderHandles || [];
     //console.log("collider.handle:",collider.handle)
     window.colliderHandles.push(collider.handle);
-
     // Push to global arrays
     window.rigidBodies.push(rigidBody);
     window.threeCubes.push(sphereMesh);  // Consider renaming `threeCubes` to a more appropriate name like `threeSpheres`
-
 }
-
 window.addBallFromTop = addBallFromTop;
-
-
-
 function shootBall() {
-
     console.log("shootBall - Spacebar released!");
-
     let ballSize = 1 + Math.random()*0.1;
-
     // addBallFromCamera(radius, color, offsetY = 0.2, density = 1) {
-    
     addBallFromCamera(ballSize, colorsSet[Math.floor(Math.random()*colorsSet.length)], 0.1, 200)
-    
     //addBallFromShotLineEnd(ballSize, colorsSet[Math.floor(Math.random()*colorsSet.length)], 0.1, 1)
     //au.playAudioFromFile(au.findSounds(audioData, "kick2")[0])
 }
 window.shootBall = shootBall
-
 document.addEventListener('keyup', function(event) {
 if (event.keyCode === 32) {
     shootBall()
@@ -363,47 +294,32 @@ if (event.keyCode === 32) {
   }
 })
 
-
 function logEvents() {
-
     // window.eventQueue.drainCollisionEvents((handle1, handle2, started) => {
     //     //console.log("Inside drainCollisionEvents. Handle1:", handle1, "Handle2:", handle2, "Started:", started);
-        
     //     if (handle1 === window.liftColliderHandle || handle2 === window.liftColliderHandle) {
     //         let ballHandle = handle1 === window.liftColliderHandle ? handle2 : handle1;
     //         console.log(`Monkey is involved in a collision event with ball: ${ballHandle}`);
-            
     //         // If the collision has stopped and this ball handle hasn't been handled already
     //         if (!started && !window.handledBalls.includes(ballHandle)) {
     //             incrementPoints(ballHandle);  // Pass the ball handle to the incrementPoints function
     //         }
     //     }
     // });
-
-
 }
 
-
-
 function updateRapier() {
-
     if (window.myRapierWorld && window.rigidBodies && window.threeCubes) {
-
         // Check if sizes match
         if (window.rigidBodies.length !== window.threeCubes.length) {
             console.error("Mismatched sizes: rigidBodies vs threeCubes");
             return;
         }
-
         window.myRapierWorld.step(window.eventQueue);
-
         for (let i = 0; i < window.rigidBodies.length; i++) {
-
             if (window.rigidBodies[i].bodyType() == 0) {
-
                 let position = window.rigidBodies[i].translation();
                 let rotation = window.rigidBodies[i].rotation();
-
                 // Check if position and rotation are valid before setting
                 if (position && rotation) {
                     window.threeCubes[i].position.set(position.x, position.y, position.z);
@@ -413,15 +329,9 @@ function updateRapier() {
                 }
             }
         }
-
         logEvents();
     }
 }
-
-
-
-
-
 
 function exportGLB(mesh) {
     const exporter = new GLTFExporter();
@@ -440,9 +350,8 @@ function exportGLB(mesh) {
         document.body.removeChild(link);
     }, { binary: true });
 }
+
 window.exportGLB = exportGLB;
-
-
 function exportGLTF(mesh) {
     const exporter = new GLTFExporter();
     let gltfData;
@@ -464,8 +373,8 @@ function exportGLTF(mesh) {
         document.body.removeChild(link);
     });
 }
-window.exportGLTF = exportGLTF;
 
+window.exportGLTF = exportGLTF;
 function onXRSessionStart() {
     const session = renderer.xr.getSession();
     console.log("onSessionStart session", session);
@@ -482,42 +391,30 @@ function onXRSessionEnd() {
 }
 
 function initializeThreeJS(uploadedImageUrl, depthImageUrl) {
-    
     removeAllCubes();
-
     loadDepthImage(uploadedImageUrl, depthImageUrl);
 }
 
 function loadDepthImage(uploadedImageUrl, depthImageUrl) {
-
-    
     const imageLoader = new THREE.ImageLoader();
-    
     imageLoader.load(depthImageUrl, function (image) {
         const scale = 0.05;  // 50% of original size, adjust this value as needed
         imageWidth = Math.floor(image.width * scale);
         imageHeight = Math.floor(image.height * scale);
-
         const canvas = document.createElement('canvas');
         canvas.width = imageWidth;
         canvas.height = imageHeight;
-
         const context = canvas.getContext('2d');
         context.drawImage(image, 0, 0, imageWidth, imageHeight);
-
         const imgData = context.getImageData(0, 0, imageWidth, imageHeight);
-
         heightData = new Uint8Array(imageWidth * imageHeight);
-
         for (let i = 0, j = 0; i < imgData.data.length; i += 4, j++) {
             const r = imgData.data[i];
             const g = imgData.data[i + 1];
             const b = imgData.data[i + 2];
             heightData[j] = ((r + g + b) / 3) / 10;
         }
-
         window.heightData = heightData;
-
         const textureLoader = new THREE.TextureLoader();
         textureLoader.load(uploadedImageUrl, function (texture) {
             makeMesh(texture);
@@ -525,41 +422,151 @@ function loadDepthImage(uploadedImageUrl, depthImageUrl) {
     });
 }
 
+function loadHDRIAsEnvMap(renderer, path, callback) {
+// Usage:
+// loadHDRIAsEnvMap(renderer, 'path_to_your.hdri', (envMap) => {
+//     someMaterial.envMap = envMap;
+
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+    new RGBELoader().load(path, (texture) => {
+        const envMap = pmremGenerator.fromEquirectangular(texture).texture;
+        callback(envMap);
+        texture.dispose();
+        pmremGenerator.dispose();
+    });
+}
+
+
+// function equirectangularToCubemap(renderer, equirectangularTexture, size = 512) {
+//     // Create a cube camera.
+//     const cubeCamera = new THREE.CubeCamera(1, 10, size);
+//     cubeCamera.position.set(0, 0, 0);
+
+//     // Create a special scene for rendering.
+//     const cubeScene = new THREE.Scene();
+
+//     // Use ShaderMaterial to map equirectangular to the inside of a cube.
+//     const equirectangularToCubemapMaterial = new THREE.ShaderMaterial({
+//         uniforms: {
+//             tEquirect: { value: equirectangularTexture }
+//         },
+//         vertexShader: /* your vertex shader */,
+//         fragmentShader: /* your fragment shader */,
+//         side: THREE.BackSide
+//     });
+
+//     // Create a large sphere to render the equirectangular map onto.
+//     const sphere = new THREE.Mesh(
+//         new THREE.SphereBufferGeometry(5, 32, 32),
+//         equirectangularToCubemapMaterial
+//     );
+//     cubeScene.add(sphere);
+
+//     // Render the scene with the cube camera.
+//     renderer.render(cubeScene, cubeCamera);
+
+//     return cubeCamera.renderTarget.texture;
+// }
+
+// const textureLoader = new THREE.TextureLoader();
+// const equirectangularTexture = textureLoader.load("path_to_your_equirectangular_image.jpg");
+// const cubemapTexture = equirectangularToCubemap(renderer, equirectangularTexture);
+
+
+
+
 
 function makeScene() {
 
     console.log("makeScene");
-    
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xefd1b5);
+    // scene.background = new THREE.Color(0xefd1b5);
     //scene.fog = new THREE.Fog(0xefd1b5, 15, 180); // white fog that starts at 10 units and ends at 50 units.
 
     
+    let textureCubeImage = [
+        "{{ url_for('static', filename='images/Park3Med/px.jpg') }}",
+        "{{ url_for('static', filename='images/Park3Med/nx-a.jpg') }}",
+        "{{ url_for('static', filename='images/Park3Med/py.jpg') }}",
+        "{{ url_for('static', filename='images/Park3Med/ny.jpg') }}",
+        "{{ url_for('static', filename='images/Park3Med/pz.jpg') }}",
+        "{{ url_for('static', filename='images/Park3Med/nz.jpg') }}"
+        ]
+    textureCube = new THREE.CubeTextureLoader().load( textureCubeImage );
+    textureCube.mapping = THREE.CubeRefractionMapping;
+
     renderer = new THREE.WebGLRenderer({ antialias: true, xrCompatible: true });
     renderer.setClearColor(0x000000, 1); 
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = false;
+
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+
     renderer.xr.enabled = true;
     renderer.xr.addEventListener('sessionstart', onXRSessionStart);
     renderer.xr.addEventListener('sessionend', onXRSessionEnd);
+
     container.appendChild(renderer.domElement);
-    
+
+    // loadHDRIAsEnvMap(renderer, '{{ url_for('static', filename='images/hdri/blue_photo_studio_4k.hdr') }}', (envMap) => {
+    //     // For refracting materials
+    //     const refractionMap = envMap.clone();
+    //     refractionMap.mapping = THREE.CubeRefractionMapping;
+
+    //     // Use for any material that should refract
+    //     //someMaterial.envMap = refractionMap;
+
+    //     // For background
+    //     scene.background = envMap;
+    // });
+ 
+
+
+    // const textureLoader = new THREE.TextureLoader();
+
+    // // Precompile the shader for efficiency
+    // const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    // pmremGenerator.compileEquirectangularShader();
+
+    // textureLoader.load("{{ url_for('static', filename='images/equi/room1.png') }}", (equirectangularTexture) => {
+    //     // This callback ensures the texture is fully loaded
+        
+    //     equirectToCubeMap = pmremGenerator.fromEquirectangular(equirectangularTexture);
+    //     equirectToCubeMap.mapping = THREE.CubeRefractionMapping;
+        
+    //     //scene.background = equirectToCubeMap;
+
+    //     // You can now use equirectToCubeMap in your scene/materials
+    //     // Example: someMaterial.envMap = equirectToCubeMap.texture;
+    //     // ... rest of your code ...
+
+    //     // If you don't need the original equirectangularTexture anymore, you can dispose of it to free up GPU memory:
+    //     equirectangularTexture.dispose();
+    // }, 
+    // undefined, // Optional progress callback
+    // (error) => {
+    //     console.error('Error loading equirectangular texture:', error);
+    // });
+
+    // equirectangularTexture.dispose();
+    // pmremGenerator.dispose();
+
+
+
     //document.body.appendChild(VRButton.createButton(renderer));
     const vrButton = VRButton.createButton(renderer);
     if (navigator.xr) {
         document.body.appendChild(vrButton);
     }
-
     controls = new OrbitControls(camera, renderer.domElement);
     controls.update()
-    
     camera.position.set(0,1.7,10);
-
     // LIGHTS
-    scene.add(new THREE.HemisphereLight(0xFFFFFF, 0xeeeeff, 3));
-
-    const light = new THREE.DirectionalLight(0xffffee, 3);
+    scene.add(new THREE.HemisphereLight(0xFFFFFF, 0xeeeeff, 3.5));
+    const light = new THREE.DirectionalLight(0xffffee, 3.5);
     light.position.set(0, 4, 0);
     light.castShadow = true;
     light.shadow.camera.top = 2;
@@ -567,66 +574,65 @@ function makeScene() {
     light.shadow.camera.right = 2;
     light.shadow.camera.left = -3;
     light.shadow.mapSize.set(512, 512);
-
     scene.add(light);
+    
+    // LIGHTS
+    const ambient = new THREE.AmbientLight( 0xffffff, 3.5 );
 
-    stats = new Stats();
-    stats.dom.id = "myStats"
-    document.body.appendChild(stats.domElement);
-    let myStats = document.getElementById("myStats");
-    document.getElementById("myStats").setAttribute("style", "position: fixed; bottom: 0px; left: 0px; cursor: pointer; opacity: 0.9; z-index: 10000;")
+    //    
+    // scene.add( ambient );
+    // stats = new Stats();
+    // stats.dom.id = "myStats"
+    
+    // document.body.appendChild(stats.domElement);
+    // let myStats = document.getElementById("myStats");
+
+    // document.getElementById("myStats").setAttribute("style", "position: fixed; bottom: 0px; left: 0px; cursor: pointer; opacity: 0.9; z-index: 10000;")
 
     window.addEventListener('resize', onWindowResize);
 
     dumpMachine();
-    
-    animate();
 
+    RAPIER.init().then(() => {
+        run_physics();
+    });
+
+    animate();
 }
 
 function removeAllCubes() {
     for (let i = 0; i < window.threeCubes.length; i++) {
         scene.remove(window.threeCubes[i]);
     }
-    
     // Remove from Rapier
     for (let i = 0; i < window.rigidBodies.length; i++) {
         myRapierWorld.removeRigidBody(window.rigidBodies[i]);
     }
-    
     // Clear arrays
     window.threeCubes = [];
     window.rigidBodies = [];
 }
 window.removeAllCubes = removeAllCubes;
 
-
 function addPhysics(mesh, geometry, density, position = {x:0,y:0,z:0} , rotation = {x:0,y:0,z:0}, scale=1) {
-
     let quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(rotation.x, rotation.y, rotation.z, 'XYZ'));
-
     const speedFactor = 10 + Math.random() * 10;
-
     // Create the rigid body description and set its properties   
     let rigidBodyDesc = RAPIER.RigidBodyDesc.fixed()
         .setTranslation(position.x, position.y, position.z)
         .setRotation({ w: quat.w, x: quat.x, y: quat.y, z: quat.z })        
         //.setLinvel(0 * speedFactor, -1 * speedFactor, 0 * speedFactor);
     let rigidBody = myRapierWorld.createRigidBody(rigidBodyDesc);
-    
     const vertices = geometry.attributes.position.array;
     const indices = geometry.index.array;
-
     const trimesh = new RAPIER.TriMesh(vertices, indices);    
     let colliderDesc = RAPIER.ColliderDesc.trimesh(trimesh).setDensity(density)
     colliderDesc.shape.indices = indices;
     colliderDesc.shape.vertices = vertices;  
-
     let collider = myRapierWorld.createCollider(colliderDesc, rigidBody);
     window.rigidBodies.push(rigidBody);
     window.threeCubes.push(mesh);
 }
-
 
 function smoothHeightData(heightData, windowSize = 0) {
     const smoothedData = new Float32Array(heightData.length);
@@ -644,107 +650,52 @@ function smoothHeightData(heightData, windowSize = 0) {
     return smoothedData;
 }
 
-
-
-
 function makeMesh(texture) {
-
     // Step 1: Remove the old mesh's rigid body and collider from the physics world
-
     if (meshGroup) {
         // Remove the old mesh from the scene
         scene.remove(meshGroup);
-        
         // Remove the old rigid body and mesh from the arrays
         const meshIndex = window.threeCubes.indexOf(meshGroup);
         if (meshIndex > -1) {
             window.threeCubes.splice(meshIndex, 1);
             window.rigidBodies.splice(meshIndex, 1); // Assuming rigidBodies and threeCubes are synchronized
         }
-
         meshGroup = undefined;
     }
-
     const geometry = new THREE.PlaneGeometry(imageWidth, imageHeight, imageWidth - 1, imageHeight - 1);
     geometry.rotateX(-Math.PI / 2);
-
     const originalVertices = geometry.attributes.position.array;
-
     // const smoothedHeightData = smoothHeightData(heightData);
     const smoothedHeightData = heightData;
-    
     for (let i = 0, j = 0, l = originalVertices.length; i < l; i++, j += 3) {
         originalVertices[j + 1] = smoothedHeightData[i] * ampFactor;
     }
-
     meshGroup = new THREE.Group();
     scene.add(meshGroup);
-
     texture.encoding = THREE.sRGBEncoding;
     mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture }));
-    meshGroup.add(mesh);
-    
-    window.meshGroup = meshGroup
-
+    // mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({
+    //     transparent: true, opacity: 0.5,
+    //     color: 0xFFFFFF, envMap: textureCube, refractionRatio: 0.98, reflectivity: 0.98
+    // }));
+        meshGroup.add(mesh);
+        window.meshGroup = meshGroup
     meshGroup.position.set(0, 1.7, -42);
     meshGroup.rotation.x = 1.15;
-
     let sc = 1;
-
     addPhysics(meshGroup, geometry, 20, meshGroup.position, meshGroup.rotation, sc);
 }
 
-
-// function makeMesh(texture) {
-
-//     const geometry = new THREE.PlaneGeometry(imageWidth, imageHeight, imageWidth - 1, imageHeight - 1);
-
-//     geometry.rotateX(-Math.PI / 2);
-
-//     const originalVertices = geometry.attributes.position.array;
-//     const smoothedHeightData = smoothHeightData(heightData);
-//     for (let i = 0, j = 0, l = originalVertices.length; i < l; i++, j += 3) {
-//         originalVertices[j + 1] = smoothedHeightData[i]*ampFactor;
-//     }
-//     if (meshGroup) {
-//         scene.remove(meshGroup);
-//         meshGroup = undefined;
-//     }
-//     meshGroup = new THREE.Group();
-//     scene.add(meshGroup);
-//     texture.encoding = THREE.sRGBEncoding;
-//     mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture })); 
-//     meshGroup.add(mesh);
-//     window.meshGroup = meshGroup
-
-//     //let someDistance = -12;  
-
-//     meshGroup.position.set(0,1.7,-42);
-//     //meshGroup.rotation.set(-1.571,0,0);
-//     meshGroup.rotation.x = 1.35
-
-//     let sc = 1;
-//     //meshGroup.scale.set(sc, sc, sc);
-
-//     //addPhysics(meshGroup,geometry,20,sc)
-//     // addPhysics(mesh, geometry, density, position = {x:0,y:0,z:0} , rotation = {x:0,y:0,z:0}, scale=1) {
-//     addPhysics(meshGroup, geometry, 20, meshGroup.position, meshGroup.rotation, sc);
-// }
-
-
 function addPlane(name = "plane",w=3, h=3, position={x:0,y:0,z:0}) {
-
     const geometry = new THREE.PlaneGeometry(w,h, w - 1, h - 1);
     mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: 0x1133FE })); 
     mesh.name = name
     mesh.position.set(position)
     scene.add(mesh)
-
     addPhysics(mesh, geometry)
 }
-
 window.addPlane = addPlane;
-
 
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -758,7 +709,6 @@ function animate() {
 
 function render(timeStamp, xrFrame) {
     if(controls) {
-        //console.log("controls")
       controls.update();
     }
     if(stats) {
@@ -767,42 +717,28 @@ function render(timeStamp, xrFrame) {
     updateRapier()
     renderer.render(scene, camera);
 }
-
-
 makeScene();
 
-
 function handleUploadFormSubmission(e) {
-
     closeGallery();
-
     const formData = new FormData(document.getElementById('uploadForm'));
-
     fetch('/upload', {
         method: 'POST',
         body: formData
     })
-    
     .then(response => response.json())
-    
     .then(data => {
-
         console.log("data", data)
-
         // Display the images
         document.getElementById('depth-image').src = `${data.depth_image_url}`
-        
         // Initialize ThreeJS
         initializeThreeJS(data.image_url, data.depth_image_url);
         document.getElementById('depth-image').classList.remove('pulsating-image');
-
     })
-
     .catch(error => {
         console.error('There was an error uploading the image:', error);
     });
 }
-
 
 document.getElementById('uploadForm').addEventListener('submit', handleUploadFormSubmission);
 
@@ -810,35 +746,27 @@ document.getElementById('uploadForm').addEventListener('submit', handleUploadFor
 document.querySelector('input[type="file"]').addEventListener('change', function() {
     const fileInput = this;
     const previewImg = document.getElementById('preview');
-
     if (fileInput.files && fileInput.files[0]) {
         const reader = new FileReader();
-        
         reader.onload = function(e) {
             // Set the preview image's src to the loaded data URL
             previewImg.src = e.target.result;
             document.getElementById('depth-image').classList.add('pulsating-image');
         };
-        
         // Read the selected file as a data URL
         reader.readAsDataURL(fileInput.files[0]);
     }
-    
     document.getElementById('uploadForm').dispatchEvent(new Event('submit')); // programmatically submit the form
 });
 
-
 const previewImg = document.getElementById('preview');
 const depthImg = document.getElementById('depth-image');
-
 previewImg.onerror = function() {
     this.src = "{{ url_for('static', filename='images/placeholder.png') }}"; // replace with your default image path
 };
-
 depthImg.onerror = function() {
     this.src = "{{ url_for('static', filename='images/placeholder.png') }}"; // replace with your default image path
 };
-
 
 /* Gallery */
 function loadGallery() {
@@ -849,7 +777,6 @@ function loadGallery() {
         gallery.innerHTML = '';  // clear the gallery
         data.images.forEach(img => {
             let originalImg = img.replace('_th.', '.');  // get the name of the original image
-
             let imgElem = document.createElement('img');
             imgElem.src = "/uploads/" + img;  // set the src to the thumbnail
             imgElem.dataset.originalSrc = "/uploads/" + originalImg;  // store the original image src in a data attribute
@@ -866,33 +793,22 @@ function loadGallery() {
 
 function getGallery(originalUrl) {
     document.getElementById('preview').src = originalUrl;
-
     // Since all depth images are in .jpg format
     let depth_image = originalUrl.replace(/(.*\/)uploads(\/[^\/]+)\.[^\.]+$/, `$1outputs$2_depth.jpg`);
-    
     //console.log("depth_image =>", depth_image)
-
     document.getElementById('galleryOverlay').style.display = 'none';
     document.getElementById('depth-image').src = depth_image;
     removeAllCubes();
-    
     loadDepthImage(originalUrl, depth_image);
 }
 
-
 function closeGallery() {
-
     document.getElementById('galleryOverlay').style.display = 'none';
-
 }
 
 window.loadGallery = loadGallery;
 window.closeGallery = closeGallery;
-
-
-
 </script>
-
 
 <div id="ui" style="padding-bottom: 50px;">
     <!-- Add padding to account for the fixed button -->
@@ -900,40 +816,23 @@ window.closeGallery = closeGallery;
         <img class="im" id="preview" alt="Image Preview" src="{{ url_for('static', filename='images/placeholder.png') }}">
         <img class="im" id="depth-image" alt="Depth Image" src="{{ url_for('static', filename='images/placeholder.png') }}">
     </div>
-    <div id="buttonContainer" style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
-
-        <a href="#" onclick="loadGallery()" class="github-corner" rel="noopener noreferrer" aria-label="View source on GitHub">
-           <!--  <img src="{{ url_for('static', filename='images/github-mark/github-mark-white.svg') }}" alt="GitHub icon" class="github-icon"> -->
+    <div id="buttonContainer">
+        <a href="#" onclick="loadGallery()" class="btn github-corner" rel="noopener noreferrer" aria-label="View source on GitHub">
             Gallery
         </a>
-
-        <a href="https://github.com/Immersive-Collective/xr-midas-threejs" class="gallery-corner" target="_blank" rel="noopener noreferrer" aria-label="View source on GitHub">
-
+        <a href="https://github.com/Immersive-Collective/xr-midas-threejs" class="btn gallery-corner" target="_blank" rel="noopener noreferrer" aria-label="View source on GitHub">
             <img src="{{ url_for('static', filename='images/github-mark/github-mark-white.svg') }}" alt="GitHub icon" class="github-icon">
         </a>
-        
-
         <form id="uploadForm">
-            <label for="file-upload" class="custom-file-upload">
+            <label for="file-upload" class="btn custom-file-upload">
                 Upload Image
             </label>
             <input id="file-upload" type="file" name="file" required style="display:none;" />
         </form>
     </div>
 </div>
-
-<div id="galleryOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0, 0, 0, 0.8);">
-    <div id="galleryContainer" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 50px; overflow-y: scroll; height: 80%; margin: 5% auto;">
+<div id="galleryOverlay">
+    <div id="galleryContainer">
         <!-- Images will be loaded here from Flask -->
     </div>
-
 </div>
-
-
-
-
-
-
-</body>
-
-</html>
