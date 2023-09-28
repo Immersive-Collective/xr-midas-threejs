@@ -74,9 +74,14 @@ window.myRapierWorld
 window.rigidBodies = window.rigidBodies || [];
 window.threeCubes = window.threeCubes || [];
 
-async function run_physics() {
+async function initRapier() {
+
+    initScene();
+
     await RAPIER.init();
-    console.log(RAPIER)
+    
+    //console.log(RAPIER)
+    
     let world = new RAPIER.World(gravity);
     const eventQueue = new RAPIER.EventQueue(true);
     const dracoLoader = new DRACOLoader();
@@ -88,10 +93,9 @@ async function run_physics() {
         let mesh = gltf.scene
         mesh.name = "PAD"
         scene.add(mesh);
-        window.cube = mesh;
-        controls.target.copy(mesh.position)
-        controls.update();
 
+        window.cube = mesh;
+        
         gltf.scene.traverse(item => {
             if (item.isMesh) {
                 const geometry = item.geometry;
@@ -99,7 +103,7 @@ async function run_physics() {
                     transparent: true,  opacity: 0.1, 
                     color: 0xFFFFFF, envMap: envMap1, refractionRatio: 0.98, reflectivity: 0.98
                 });
-                console.log(geometry)
+                //console.log(geometry)
                 const vertices = geometry.attributes.position.array;
                 const indices = geometry.index.array;
                 const trimesh = new RAPIER.TriMesh(vertices, indices);
@@ -119,8 +123,13 @@ async function run_physics() {
                 window.eventQueue = eventQueue;
             }
         })
+
+        animate();
+
     });
+
 }
+
 
 
 
@@ -396,6 +405,8 @@ function initializeThreeJS(uploadedImageUrl, depthImageUrl) {
 }
 
 function loadDepthImage(uploadedImageUrl, depthImageUrl) {
+
+    
     const imageLoader = new THREE.ImageLoader();
     imageLoader.load(depthImageUrl, function (image) {
         const scale = 0.05;  // 50% of original size, adjust this value as needed
@@ -474,28 +485,136 @@ function loadHDRIAsEnvMap(renderer, path, callback) {
 // const cubemapTexture = equirectangularToCubemap(renderer, equirectangularTexture);
 
 
+function loadSkyboxShader() {
+
+
+    const vertexShader = `
+        varying vec2 vUv;
+        void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `;
+
+    const fragmentShader = `
+
+        uniform vec3 innerColors[4];
+        uniform vec3 outerColors[4];
+        uniform int selectedIndex;
+
+        varying vec2 vUv;
+
+        void main() {
+            // Calculate the distance from the center of the gradient
+            float distanceFromCenter = distance(vUv, vec2(0.5, 0.5));
+
+            // Use the selected index to get the colors
+            vec3 innerColor = innerColors[selectedIndex];
+            vec3 outerColor = outerColors[selectedIndex];
+
+            // Blend the colors based on distance from the center
+            vec3 color = mix(innerColor, outerColor, distanceFromCenter * 2.0);
+
+            gl_FragColor = vec4(color, 1.0);
+        }
+
+        // varying vec2 vUv;
+        // void main() {
+        //     // Calculate the distance from the center of the gradient
+        //     float distanceFromCenter = distance(vUv, vec2(0.5, 0.5));
+
+        //     // Define pastel colors for the gradient
+        //     vec3 innerColor = vec3(0.8, 0.9, 1.0);
+        //     vec3 outerColor = vec3(1.0, 0.8, 0.9);
+
+        //     // Blend the colors based on distance from the center
+        //     vec3 color = mix(innerColor, outerColor, distanceFromCenter * 2.0);
+
+        //     gl_FragColor = vec4(color, 1.0);
+        // }
+    `;
+
+    // const backgroundMaterial = new THREE.ShaderMaterial({
+    //     vertexShader: vertexShader,
+    //     fragmentShader: fragmentShader,
+    //     side: THREE.BackSide
+    // }); 
+
+    const backgroundMaterial = new THREE.ShaderMaterial({
+        vertexShader: vertexShader,
+        fragmentShader: fragmentShader,
+        side: THREE.BackSide,
+        uniforms: {
+            innerColors: {
+                value: [
+                    new THREE.Vector3(0.8, 0.9, 1.0),
+                    new THREE.Vector3(0.8, 1.0, 0.9),
+                    new THREE.Vector3(1.0, 0.9, 0.7),
+                    new THREE.Vector3(1.0, 0.8, 0.9)
+                ]
+            },
+            outerColors: {
+                value: [
+                    new THREE.Vector3(1.0, 0.8, 0.9),
+                    new THREE.Vector3(0.9, 0.8, 1.0),
+                    new THREE.Vector3(0.7, 0.9, 1.0),
+                    new THREE.Vector3(1.0, 1.0, 0.8)
+                ]
+            },
+            selectedIndex: { value: 0 }
+        }
+    });
+
+
+    //let textureCube = new THREE.CubeTextureLoader().load(textureCubeImage);
+    //backgroundMaterial.mapping = THREE.CubeRefractionMapping;
+
+    backgroundMaterial.uniforms.selectedIndex.value = 4;
+
+    return backgroundMaterial;
+
+
+    /*
+
+    const backgroundGeometry = new THREE.SphereBufferGeometry(5000, 32, 32);
+    const backgroundMesh = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
+    scene.add(backgroundMesh);
+
+    */
+
+
+}
+
+function loadSkyboxTexture(basePath,ext) {
+    let directions = ["px", "nx", "py", "ny", "pz", "nz"];
+    let textureCubeImage = directions.map(dir => `${basePath}/${dir}.${ext}`);
+    let textureCube = new THREE.CubeTextureLoader().load(textureCubeImage);
+
+    textureCube.mapping = THREE.CubeRefractionMapping;
+    return textureCube;
+}
 
 
 
-function makeScene() {
+function createBackgroundSphere() {
+    const geometry = new THREE.SphereGeometry(5000, 32, 32); // Large radius
+    const material = loadSkyboxShader();  // Your ShaderMaterial
+    const sphere = new THREE.Mesh(geometry, material);
+    return sphere;
+}
 
-    console.log("makeScene");
+
+
+
+
+function initScene() {
+
+    console.log("initScene");
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
     scene = new THREE.Scene();
-    // scene.background = new THREE.Color(0xefd1b5);
-    //scene.fog = new THREE.Fog(0xefd1b5, 15, 180); // white fog that starts at 10 units and ends at 50 units.
 
-    
-    let textureCubeImage = [
-        "{{ url_for('static', filename='images/Park3Med/px.jpg') }}",
-        "{{ url_for('static', filename='images/Park3Med/nx-a.jpg') }}",
-        "{{ url_for('static', filename='images/Park3Med/py.jpg') }}",
-        "{{ url_for('static', filename='images/Park3Med/ny.jpg') }}",
-        "{{ url_for('static', filename='images/Park3Med/pz.jpg') }}",
-        "{{ url_for('static', filename='images/Park3Med/nz.jpg') }}"
-        ]
-    textureCube = new THREE.CubeTextureLoader().load( textureCubeImage );
-    textureCube.mapping = THREE.CubeRefractionMapping;
+    let skyboxPath = "{{ url_for('static', filename='images/skyboxes/x1') }}";
+    textureCube = loadSkyboxTexture(skyboxPath,"png");
 
     renderer = new THREE.WebGLRenderer({ antialias: true, xrCompatible: true });
     renderer.setClearColor(0x000000, 1); 
@@ -511,62 +630,22 @@ function makeScene() {
 
     container.appendChild(renderer.domElement);
 
-    // loadHDRIAsEnvMap(renderer, '{{ url_for('static', filename='images/hdri/blue_photo_studio_4k.hdr') }}', (envMap) => {
-    //     // For refracting materials
-    //     const refractionMap = envMap.clone();
-    //     refractionMap.mapping = THREE.CubeRefractionMapping;
-
-    //     // Use for any material that should refract
-    //     //someMaterial.envMap = refractionMap;
-
-    //     // For background
-    //     scene.background = envMap;
-    // });
- 
-
-
-    // const textureLoader = new THREE.TextureLoader();
-
-    // // Precompile the shader for efficiency
-    // const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    // pmremGenerator.compileEquirectangularShader();
-
-    // textureLoader.load("{{ url_for('static', filename='images/equi/room1.png') }}", (equirectangularTexture) => {
-    //     // This callback ensures the texture is fully loaded
-        
-    //     equirectToCubeMap = pmremGenerator.fromEquirectangular(equirectangularTexture);
-    //     equirectToCubeMap.mapping = THREE.CubeRefractionMapping;
-        
-    //     //scene.background = equirectToCubeMap;
-
-    //     // You can now use equirectToCubeMap in your scene/materials
-    //     // Example: someMaterial.envMap = equirectToCubeMap.texture;
-    //     // ... rest of your code ...
-
-    //     // If you don't need the original equirectangularTexture anymore, you can dispose of it to free up GPU memory:
-    //     equirectangularTexture.dispose();
-    // }, 
-    // undefined, // Optional progress callback
-    // (error) => {
-    //     console.error('Error loading equirectangular texture:', error);
-    // });
-
-    // equirectangularTexture.dispose();
-    // pmremGenerator.dispose();
-
-
-
     //document.body.appendChild(VRButton.createButton(renderer));
     const vrButton = VRButton.createButton(renderer);
     if (navigator.xr) {
         document.body.appendChild(vrButton);
     }
+
+    camera.position.set(0,1.7,100);
+
     controls = new OrbitControls(camera, renderer.domElement);
-    controls.update()
-    camera.position.set(0,1.7,10);
+    controls.update();
+
+
     // LIGHTS
     scene.add(new THREE.HemisphereLight(0xFFFFFF, 0xeeeeff, 3.5));
     const light = new THREE.DirectionalLight(0xffffee, 3.5);
+
     light.position.set(0, 4, 0);
     light.castShadow = true;
     light.shadow.camera.top = 2;
@@ -574,13 +653,23 @@ function makeScene() {
     light.shadow.camera.right = 2;
     light.shadow.camera.left = -3;
     light.shadow.mapSize.set(512, 512);
-    scene.add(light);
     
-    // LIGHTS
-    const ambient = new THREE.AmbientLight( 0xffffff, 3.5 );
+    scene.add(light);
 
-    //    
-    // scene.add( ambient );
+    //scene.background = textureCube;
+
+    // LIGHTS
+    const ambient = new THREE.AmbientLight( 0xffffff, 3.5 );       
+    scene.add( ambient );
+
+
+    const backgroundSphere = createBackgroundSphere();
+    scene.add(backgroundSphere);
+
+    //scene.background = textureCube;
+    //scene.background = loadSkyboxShader()
+
+
     // stats = new Stats();
     // stats.dom.id = "myStats"
     
@@ -591,13 +680,9 @@ function makeScene() {
 
     window.addEventListener('resize', onWindowResize);
 
-    dumpMachine();
+    animate()
 
-    RAPIER.init().then(() => {
-        run_physics();
-    });
 
-    animate();
 }
 
 function removeAllCubes() {
@@ -651,6 +736,7 @@ function smoothHeightData(heightData, windowSize = 0) {
 }
 
 function makeMesh(texture) {
+
     // Step 1: Remove the old mesh's rigid body and collider from the physics world
     if (meshGroup) {
         // Remove the old mesh from the scene
@@ -663,8 +749,10 @@ function makeMesh(texture) {
         }
         meshGroup = undefined;
     }
+    
     const geometry = new THREE.PlaneGeometry(imageWidth, imageHeight, imageWidth - 1, imageHeight - 1);
     geometry.rotateX(-Math.PI / 2);
+    
     const originalVertices = geometry.attributes.position.array;
     // const smoothedHeightData = smoothHeightData(heightData);
     const smoothedHeightData = heightData;
@@ -684,7 +772,9 @@ function makeMesh(texture) {
     meshGroup.position.set(0, 1.7, -42);
     meshGroup.rotation.x = 1.15;
     let sc = 1;
+
     addPhysics(meshGroup, geometry, 20, meshGroup.position, meshGroup.rotation, sc);
+
 }
 
 function addPlane(name = "plane",w=3, h=3, position={x:0,y:0,z:0}) {
@@ -704,20 +794,28 @@ function onWindowResize() {
 }
 
 function animate() {
+
+    dumpMachine();
+
     renderer.setAnimationLoop(render);
 }
 
 function render(timeStamp, xrFrame) {
+
     if(controls) {
       controls.update();
+    
     }
+
     if(stats) {
         stats.update()
     }
+    
     updateRapier()
+
     renderer.render(scene, camera);
 }
-makeScene();
+
 
 function handleUploadFormSubmission(e) {
     closeGallery();
@@ -792,14 +890,18 @@ function loadGallery() {
 }
 
 function getGallery(originalUrl) {
+
     document.getElementById('preview').src = originalUrl;
     // Since all depth images are in .jpg format
     let depth_image = originalUrl.replace(/(.*\/)uploads(\/[^\/]+)\.[^\.]+$/, `$1outputs$2_depth.jpg`);
     //console.log("depth_image =>", depth_image)
     document.getElementById('galleryOverlay').style.display = 'none';
     document.getElementById('depth-image').src = depth_image;
+
     removeAllCubes();
+
     loadDepthImage(originalUrl, depth_image);
+
 }
 
 function closeGallery() {
@@ -808,6 +910,17 @@ function closeGallery() {
 
 window.loadGallery = loadGallery;
 window.closeGallery = closeGallery;
+
+document.addEventListener("DOMContentLoaded", function() {
+
+    RAPIER.init().then(() => {
+        initRapier();
+    });
+
+
+});
+
+
 </script>
 
 <div id="ui" style="padding-bottom: 50px;">
@@ -831,6 +944,7 @@ window.closeGallery = closeGallery;
         </form>
     </div>
 </div>
+
 <div id="galleryOverlay">
     <div id="galleryContainer">
         <!-- Images will be loaded here from Flask -->

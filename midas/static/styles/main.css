@@ -38,7 +38,7 @@ a:active {
 
 /* Image Styles */
 .im {
-    max-width: 20%;
+    max-width: 5rem;
     height: auto;
 }
 
@@ -118,6 +118,7 @@ a:active {
     height: 100%;
     overflow-y: hidden; /* Prevent the entire overlay from scrolling */
     background: rgba(0, 0, 0, 0.8); /* Assuming you want a semi-transparent background for the overlay */
+    display: none;
 }
 
 /* 2 columns for tablets, 3 columns for desktops */
