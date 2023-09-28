@@ -613,7 +613,7 @@ function initScene() {
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
     scene = new THREE.Scene();
 
-    let skyboxPath = "{{ url_for('static', filename='images/skyboxes/x1') }}";
+    let skyboxPath = "{{ url_for('static', filename='images/skyboxes/x5') }}";
     textureCube = loadSkyboxTexture(skyboxPath,"png");
 
     renderer = new THREE.WebGLRenderer({ antialias: true, xrCompatible: true });
@@ -664,9 +664,11 @@ function initScene() {
 
 
     const backgroundSphere = createBackgroundSphere();
-    scene.add(backgroundSphere);
-
-    //scene.background = textureCube;
+    
+    //scene.add(backgroundSphere);
+    
+    scene.background = textureCube;
+    
     //scene.background = loadSkyboxShader()
 
 
