@@ -636,7 +636,7 @@ function initScene() {
         document.body.appendChild(vrButton);
     }
 
-    camera.position.set(0,1.7,100);
+    camera.position.set(0,1.7,20);
 
     controls = new OrbitControls(camera, renderer.domElement);
     controls.update();
@@ -738,16 +738,12 @@ function smoothHeightData(heightData, windowSize = 0) {
 }
 
 function makeMesh(texture) {
-
-    // Step 1: Remove the old mesh's rigid body and collider from the physics world
     if (meshGroup) {
-        // Remove the old mesh from the scene
         scene.remove(meshGroup);
-        // Remove the old rigid body and mesh from the arrays
         const meshIndex = window.threeCubes.indexOf(meshGroup);
         if (meshIndex > -1) {
             window.threeCubes.splice(meshIndex, 1);
-            window.rigidBodies.splice(meshIndex, 1); // Assuming rigidBodies and threeCubes are synchronized
+            window.rigidBodies.splice(meshIndex, 1);
         }
         meshGroup = undefined;
     }
@@ -756,28 +752,40 @@ function makeMesh(texture) {
     geometry.rotateX(-Math.PI / 2);
     
     const originalVertices = geometry.attributes.position.array;
-    // const smoothedHeightData = smoothHeightData(heightData);
     const smoothedHeightData = heightData;
     for (let i = 0, j = 0, l = originalVertices.length; i < l; i++, j += 3) {
         originalVertices[j + 1] = smoothedHeightData[i] * ampFactor;
     }
+    
     meshGroup = new THREE.Group();
     scene.add(meshGroup);
     texture.encoding = THREE.sRGBEncoding;
-    mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture }));
-    // mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({
-    //     transparent: true, opacity: 0.5,
-    //     color: 0xFFFFFF, envMap: textureCube, refractionRatio: 0.98, reflectivity: 0.98
-    // }));
-        meshGroup.add(mesh);
-        window.meshGroup = meshGroup
+
+    const textureMaterial = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.FrontSide
+    });
+
+    const blackMaterial = new THREE.MeshBasicMaterial({
+        color: 0x000000, 
+        side: THREE.BackSide
+    });
+
+    const offset = 0.03;  // You can adjust this value as necessary
+
+    const texturedMesh = new THREE.Mesh(geometry, textureMaterial);
+    meshGroup.add(texturedMesh);
+
+    const blackMesh = new THREE.Mesh(geometry, blackMaterial);
+    blackMesh.position.y -= offset;
+    meshGroup.add(blackMesh);
+
+    window.meshGroup = meshGroup;
     meshGroup.position.set(0, 1.7, -42);
     meshGroup.rotation.x = 1.15;
-    let sc = 1;
-
-    addPhysics(meshGroup, geometry, 20, meshGroup.position, meshGroup.rotation, sc);
-
+    addPhysics(meshGroup, geometry, 20, meshGroup.position, meshGroup.rotation, 1);
 }
+
 
 function addPlane(name = "plane",w=3, h=3, position={x:0,y:0,z:0}) {
     const geometry = new THREE.PlaneGeometry(w,h, w - 1, h - 1);
@@ -868,6 +876,10 @@ depthImg.onerror = function() {
     this.src = "{{ url_for('static', filename='images/placeholder.png') }}"; // replace with your default image path
 };
 
+/* Github */
+document.getElementById("github-link").onclick = () => window.open("https://github.com/Immersive-Collective/xr-midas-threejs","_blank");
+
+
 /* Gallery */
 function loadGallery() {
     fetch("/get-images")
@@ -926,29 +938,26 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>
 
 <div id="ui" style="padding-bottom: 50px;">
-    <!-- Add padding to account for the fixed button -->
+
     <div id="imageContainer">
         <img class="im" id="preview" alt="Image Preview" src="{{ url_for('static', filename='images/placeholder.png') }}">
         <img class="im" id="depth-image" alt="Depth Image" src="{{ url_for('static', filename='images/placeholder.png') }}">
     </div>
-    <div id="buttonContainer">
-        <a href="#" onclick="loadGallery()" class="btn github-corner" rel="noopener noreferrer" aria-label="View source on GitHub">
-            Gallery
-        </a>
-        <a href="https://github.com/Immersive-Collective/xr-midas-threejs" class="btn gallery-corner" target="_blank" rel="noopener noreferrer" aria-label="View source on GitHub">
-            <img src="{{ url_for('static', filename='images/github-mark/github-mark-white.svg') }}" alt="GitHub icon" class="github-icon">
-        </a>
-        <form id="uploadForm">
-            <label for="file-upload" class="btn custom-file-upload">
-                Upload Image
-            </label>
-            <input id="file-upload" type="file" name="file" required style="display:none;" />
-        </form>
-    </div>
-</div>
 
+    <a href="#" id="gallery-link" onclick="loadGallery()" class="btn github-corner" rel="noopener noreferrer" aria-label="View source on GitHub">Gallery</a>
+    <div id="github-link" aria-label="View source on GitHub">
+        <img id="github-link-icon" src="{{ url_for('static', filename='images/github-mark/github-mark-white.svg') }}" alt="GitHub icon" class="github-icon">
+    </div>
+    
+    <form id="uploadForm">
+        <label id="file-upload-link" for="file-upload" class="btn custom-file-upload">Upload Image</label>
+        <input id="file-upload" type="file" name="file" required style="display:none;" />
+    </form>
+
+</div>
 <div id="galleryOverlay">
     <div id="galleryContainer">
         <!-- Images will be loaded here from Flask -->
     </div>
 </div>
+
