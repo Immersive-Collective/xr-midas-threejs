@@ -134,6 +134,9 @@ async function initRapier() {
             }
         })
 
+
+        setTimeout(() => { getGallery('/uploads/00136-2039960348.png') }, 2000)
+
         animate();
 
     });
@@ -1264,6 +1267,8 @@ function loadGallery() {
     });
 }
 
+
+
 function getGallery(originalUrl) {
 
     document.getElementById('preview').src = originalUrl;
@@ -1278,6 +1283,8 @@ function getGallery(originalUrl) {
     loadDepthImage(originalUrl, depth_image);
 
 }
+window.getGallery = getGallery;
+
 
 function closeGallery() {
     document.getElementById('galleryOverlay').style.display = 'none';
