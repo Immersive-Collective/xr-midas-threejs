@@ -14,7 +14,9 @@
 {
   "imports": {
     "three": "{{ url_for('static', filename='libs/three/build/three.module.js') }}",
-    "three/addons/": "{{ url_for('static', filename='libs/three/examples/jsm/') }}"
+    "three/addons/": "{{ url_for('static', filename='libs/three/examples/jsm/') }}",
+    "gsap": "{{ url_for('static', filename='libs/gsap/index.js') }}",    
+    "gsap/plugins/": "{{ url_for('static', filename='libs/gsap/') }}"    
   }
 }
 </script>
@@ -33,8 +35,16 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
+import { gsap } from "gsap";
+import { PixiPlugin } from "gsap/plugins/PixiPlugin.js";
+import { MotionPathPlugin } from "gsap/plugins/MotionPathPlugin.js";
+
 /* Colors */ 
 import * as cols from '{{ url_for('static', filename='libs/colors/pastels.js') }}';
+
+/* Camera Preseted Positions */
+import * as cameraPositionsData from '{{ url_for('static', filename='libs/data/cameraPositions.js') }}'; 
+window.cameraPositionsData = cameraPositionsData;
 
 /* Rapier */
 import RAPIER from '{{ url_for('static', filename='libs/rapier3d-compat/rapier.es.js') }}';
@@ -130,7 +140,81 @@ async function initRapier() {
 
 }
 
+let cameraPositions = []
 
+function saveCameraPosition() {
+
+    // Extract and clone the necessary properties from your camera and controls objects.
+    const cameraData = {
+        position: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+        rotation: { x: camera.rotation.x, y: camera.rotation.y, z: camera.rotation.z }
+    };
+    const controlsData = { target: { x: controls.target.x, y: controls.target.y, z: controls.target.z } };
+    
+    // Store them in the local storage.
+    localStorage.setItem('cameraData', JSON.stringify(cameraData));
+    localStorage.setItem('controlsData', JSON.stringify(controlsData));
+
+    // Add to the cameraPositions array and store it too.
+    cameraPositions.push({
+        camera: cameraData,
+        controls: controlsData
+    });
+    localStorage.setItem('cameraPositions', JSON.stringify(cameraPositions));
+
+    let r = JSON.stringify(cameraPositions[cameraPositions.length-1])
+    console.log(r)
+
+}
+
+
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}
+
+let previousRid = -1;
+
+function getRandomDigit(size) {
+    let rid;
+    do {
+        rid = Math.ceil(Math.random() * size);
+    } while (rid === previousRid);
+
+    previousRid = rid;
+    return rid;
+}
+
+function  animateCameraRandom() {
+    let rid = getRandomDigit(4);
+    console.log("rid:",rid)
+    animateCamera(rid)
+}
+
+let cameraTween, rotationTween, controlsTween;
+
+function animateCamera(id) {
+    let c = cameraPositionsData.cameraPosition[id].camera
+    let t = cameraPositionsData.cameraPosition[id].controls
+
+    // Save the tweens so we can terminate them later
+    cameraTween = gsap.to(camera.position, { duration: 4, x: c.position.x, y: c.position.y, z: c.position.z });
+    rotationTween = gsap.to(camera.rotation, { duration: 4, x: c.rotation.x, y: c.rotation.y, z: c.rotation.z });
+    controlsTween = gsap.to(controls.target, { duration: 4, x: t.target.x, y: t.target.y, z: t.target.z });
+}
+
+window.animateCamera = animateCamera;
+
+function animateCameraTo(targetPosition, targetRotation, targetControlsTarget) {
+    gsap.to(camera.position, { duration: 2, x: targetPosition.x, y: targetPosition.y, z: targetPosition.z });
+    gsap.to(camera.rotation, { duration: 2, x: targetRotation.x, y: targetRotation.y, z: targetRotation.z });
+    gsap.to(controls.target, { duration: 2, x: targetControlsTarget.x, y: targetControlsTarget.y, z: targetControlsTarget.z });
+}
+window.animateCameraTo = animateCameraTo;
 
 
 /* Shaders */
@@ -219,6 +303,7 @@ function addBallFromCamera(radius, color, offsetY = 0.2, density = 1) {
       window.threeCubes.push(sphereMesh);  // Consider renaming this array for clarity
 }
 window.addBallFromCamera = addBallFromCamera;
+
 
 function shootBallFromTop() {
     // Safeguard against undefined myRapierWorld
@@ -404,11 +489,52 @@ function initializeThreeJS(uploadedImageUrl, depthImageUrl) {
     loadDepthImage(uploadedImageUrl, depthImageUrl);
 }
 
+
+function displayPalette(imageName, colors) {
+
+
+    colors = colors.map(color => `#${color.slice(2)}`);
+    let displayText = colors.map(() => `%c  `).join('');  // create a series of space-filled boxes for each color
+    let styles = colors.map(color => `background:${color}; padding:5px; border:1px solid ${color};`);
+    console.log(displayText, ...styles);
+
+    window.loadedColors = colors
+
+
+
+}
+
+let loadedColors
+window.loadedColors = loadedColors
+
+function loadPalette(uploadedImageUrl) {
+
+    const paletteUrl = uploadedImageUrl.replace(/_depth(\.[^\.]+)$/, '_colors.json');
+    const imageName = paletteUrl.split('/').pop().replace('_colors.json', '');
+
+    console.log("paletteUrl", paletteUrl, "imageName", imageName)
+
+    // Fetch the color palette from the server
+    fetch(paletteUrl)
+        .then(response => response.json())
+        .then(data => {
+
+            const colors = data.colors;
+
+            displayPalette(imageName, data);
+        })
+        .catch(error => {
+            console.error("Error fetching palette:", error);
+        });
+}
+
+
 function loadDepthImage(uploadedImageUrl, depthImageUrl) {
 
-    
     const imageLoader = new THREE.ImageLoader();
+    
     imageLoader.load(depthImageUrl, function (image) {
+
         const scale = 0.05;  // 50% of original size, adjust this value as needed
         imageWidth = Math.floor(image.width * scale);
         imageHeight = Math.floor(image.height * scale);
@@ -427,9 +553,15 @@ function loadDepthImage(uploadedImageUrl, depthImageUrl) {
         }
         window.heightData = heightData;
         const textureLoader = new THREE.TextureLoader();
+        
         textureLoader.load(uploadedImageUrl, function (texture) {
+            
             makeMesh(texture);
+            loadPalette(depthImageUrl)
+
         });
+
+
     });
 }
 
@@ -485,6 +617,165 @@ function loadHDRIAsEnvMap(renderer, path, callback) {
 // const cubemapTexture = equirectangularToCubemap(renderer, equirectangularTexture);
 
 
+function loadVoronoiSkyboxHex(hexColors) {
+
+
+
+
+const vertexShader = `
+    varying vec2 vUv;
+    void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+`;
+
+const fragmentShader = `
+    uniform vec2 points[32];
+    uniform int numPoints;
+    uniform vec3 colors[32];
+    varying vec2 vUv;
+
+    void main() {
+        float minDist = 2.0;
+        int minIndex = 0;
+        for(int i = 0; i < numPoints; i++) {
+            vec2 p = points[i];
+            float dist = length(vUv - p);
+            if(dist < minDist) {
+                minDist = dist;
+                minIndex = i;
+            }
+        }
+        
+        // Calculate the distance from the Voronoi point for gradient effect
+        float distanceFromPoint = length(vUv - points[minIndex]);
+
+        // You can adjust the gradient's reach here
+        float gradientSize = 0.1;
+
+        // Use smoothstep to create a smooth gradient effect between two colors 
+        // based on the distance from the Voronoi point.
+        vec3 gradientColor = mix(colors[minIndex], vec3(1.0, 1.0, 1.0), smoothstep(0.0, gradientSize, distanceFromPoint));
+
+        gl_FragColor = vec4(gradientColor, 1.0);
+    }
+`;
+
+// ... (the rest remains the same)
+
+
+
+    // const fragmentShader = `
+    //     uniform vec2 points[32];
+    //     uniform int numPoints;
+    //     uniform vec3 colors[32];
+    //     varying vec2 vUv;
+
+    //     void main() {
+    //         float minDist = 2.0;
+    //         int minIndex = 0;
+    //         for(int i = 0; i < numPoints; i++) {
+    //             vec2 p = points[i];
+    //             float dist = length(vUv - p);
+    //             if(dist < minDist) {
+    //                 minDist = dist;
+    //                 minIndex = i;
+    //             }
+    //         }
+            
+    //         gl_FragColor = vec4(colors[minIndex], 1.0);
+    //     }
+    // `;
+
+    const pointsArray = [];
+    const MAX_POINTS = 32;
+    for(let i = 0; i < MAX_POINTS; i++) {
+        pointsArray.push(new THREE.Vector2(Math.random(), Math.random()));
+    }
+
+    // Convert hex color strings to RGB vec3 format
+    // const colorArray = hexColors.map(hex => {
+    //     const r = parseInt(hex.slice(1, 3), 16) / 255;
+    //     const g = parseInt(hex.slice(3, 5), 16) / 255;
+    //     const b = parseInt(hex.slice(5, 7), 16) / 255;
+    //     return new THREE.Vector3(r, g, b);
+    // });
+
+    // Convert hex color strings to RGB vec3 format
+    const colorArray = hexColors.map(hex => {
+        const r = parseInt(hex.slice(2, 4), 16) / 255;
+        const g = parseInt(hex.slice(4, 6), 16) / 255;
+        const b = parseInt(hex.slice(6, 8), 16) / 255;
+        return new THREE.Vector3(r, g, b);
+    });
+
+
+    const voronoiMaterial = new THREE.ShaderMaterial({
+        vertexShader: vertexShader,
+        fragmentShader: fragmentShader,
+        side: THREE.BackSide,
+        uniforms: {
+            points: { value: pointsArray },
+            numPoints: { value: MAX_POINTS },
+            colors: { value: colorArray }
+        }
+    });
+
+    return voronoiMaterial;
+}
+
+
+
+function loadVoronoiSkybox() {
+    const vertexShader = `
+        varying vec2 vUv;
+        void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `;
+
+    const fragmentShader = `
+        uniform vec2 points[32];
+        uniform int numPoints;
+        varying vec2 vUv;
+
+        void main() {
+            float minDist = 2.0;
+            for(int i = 0; i < numPoints; i++) {
+                vec2 p = points[i];
+                float dist = length(vUv - p);
+                minDist = min(minDist, dist);
+            }
+            
+            float grayValue = mod(minDist * 150.0, 1.0);
+            gl_FragColor = vec4(vec3(grayValue), 1.0);
+        }
+    `;
+
+    const pointsArray = [];
+    const MAX_POINTS = 32;
+    for(let i = 0; i < MAX_POINTS; i++) {
+        pointsArray.push(new THREE.Vector2(Math.random(), Math.random()));
+    }
+
+    const voronoiMaterial = new THREE.ShaderMaterial({
+        vertexShader: vertexShader,
+        fragmentShader: fragmentShader,
+        side: THREE.BackSide,
+        uniforms: {
+            points: { value: pointsArray },
+            numPoints: { value: MAX_POINTS } // or any other number if you want fewer points
+        }
+    });
+
+    return voronoiMaterial;
+}
+
+
+
+
 function loadSkyboxShader() {
 
 
@@ -518,27 +809,8 @@ function loadSkyboxShader() {
             gl_FragColor = vec4(color, 1.0);
         }
 
-        // varying vec2 vUv;
-        // void main() {
-        //     // Calculate the distance from the center of the gradient
-        //     float distanceFromCenter = distance(vUv, vec2(0.5, 0.5));
-
-        //     // Define pastel colors for the gradient
-        //     vec3 innerColor = vec3(0.8, 0.9, 1.0);
-        //     vec3 outerColor = vec3(1.0, 0.8, 0.9);
-
-        //     // Blend the colors based on distance from the center
-        //     vec3 color = mix(innerColor, outerColor, distanceFromCenter * 2.0);
-
-        //     gl_FragColor = vec4(color, 1.0);
-        // }
     `;
 
-    // const backgroundMaterial = new THREE.ShaderMaterial({
-    //     vertexShader: vertexShader,
-    //     fragmentShader: fragmentShader,
-    //     side: THREE.BackSide
-    // }); 
 
     const backgroundMaterial = new THREE.ShaderMaterial({
         vertexShader: vertexShader,
@@ -566,21 +838,9 @@ function loadSkyboxShader() {
     });
 
 
-    //let textureCube = new THREE.CubeTextureLoader().load(textureCubeImage);
-    //backgroundMaterial.mapping = THREE.CubeRefractionMapping;
-
     backgroundMaterial.uniforms.selectedIndex.value = 4;
 
     return backgroundMaterial;
-
-
-    /*
-
-    const backgroundGeometry = new THREE.SphereBufferGeometry(5000, 32, 32);
-    const backgroundMesh = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
-    scene.add(backgroundMesh);
-
-    */
 
 
 }
@@ -595,14 +855,23 @@ function loadSkyboxTexture(basePath,ext) {
 }
 
 
-
 function createBackgroundSphere() {
-    const geometry = new THREE.SphereGeometry(5000, 32, 32); // Large radius
+    const geometry = new THREE.SphereGeometry(5000, 32, 32); // Large radius 
+    //const material = loadVoronoiSkybox();
     const material = loadSkyboxShader();  // Your ShaderMaterial
     const sphere = new THREE.Mesh(geometry, material);
     return sphere;
 }
 
+
+function createBackgroundSphereHex(colors) {
+    const geometry = new THREE.SphereGeometry(5000, 32, 32); // Large radius 
+    const material = loadVoronoiSkyboxHex(colors);
+    //const material = loadSkyboxShader();  // Your ShaderMaterial
+    const sphere = new THREE.Mesh(geometry, material);
+    return sphere;
+}
+window.createBackgroundSphereHex = createBackgroundSphereHex;
 
 
 
@@ -611,7 +880,9 @@ function initScene() {
 
     console.log("initScene");
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
+    window.camera = camera;
     scene = new THREE.Scene();
+    window.scene = scene;
 
     let skyboxPath = "{{ url_for('static', filename='images/skyboxes/x5') }}";
     textureCube = loadSkyboxTexture(skyboxPath,"png");
@@ -639,7 +910,21 @@ function initScene() {
     camera.position.set(0,1.7,20);
 
     controls = new OrbitControls(camera, renderer.domElement);
-    controls.update();
+
+    const debouncedSave = debounce(saveCameraPosition, 300); // 300ms delay
+    controls.addEventListener('end', debouncedSave);
+
+    // Assuming controls is your instance of OrbitControls
+    controls.addEventListener('start', function() {
+        
+        window.autoRotate = false;
+
+        // Interrupt GSAP animations
+        if (cameraTween) cameraTween.kill();
+        if (rotationTween) rotationTween.kill();
+        if (controlsTween) controlsTween.kill();
+
+    });
 
 
     // LIGHTS
@@ -663,8 +948,7 @@ function initScene() {
     scene.add( ambient );
 
 
-    const backgroundSphere = createBackgroundSphere();
-    
+    const backgroundSphere = createBackgroundSphere(); 
     //scene.add(backgroundSphere);
     
     scene.background = textureCube;
@@ -681,6 +965,20 @@ function initScene() {
     // document.getElementById("myStats").setAttribute("style", "position: fixed; bottom: 0px; left: 0px; cursor: pointer; opacity: 0.9; z-index: 10000;")
 
     window.addEventListener('resize', onWindowResize);
+
+    document.addEventListener('keyup', function(event) {
+        console.log(event.key);
+        if (event.key.match(/^\d$/)) {  // Check if the key is a single digit
+            //iterateCameraData(event.key)
+            animateCamera(event.key)
+        }
+          // if (event.keyCode === 32) {
+          //   shootBall()
+          // }
+          // if (event.keyCode === 86) {
+          //   dropSomething()
+          // }
+    })
 
     animate()
 
@@ -784,6 +1082,10 @@ function makeMesh(texture) {
     meshGroup.position.set(0, 1.7, -42);
     meshGroup.rotation.x = 1.15;
     addPhysics(meshGroup, geometry, 20, meshGroup.position, meshGroup.rotation, 1);
+
+
+    animateCameraRandom()
+
 }
 
 
@@ -803,6 +1105,42 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+
+let autoRotate
+
+//let targetPoint = new THREE.Vector3(0, 0, 0);
+let rotationAngle = 0;
+let rotationRadius = 100;
+
+//window.targetPoint = targetPoint
+
+function freeFly() {
+
+
+    if(scene.getObjectByName("PAD") && window.autoRotate == true) {
+
+        let targetPoint = scene.getObjectByName("PAD").position;
+
+
+        rotationAngle += 0.001; // Adjust the value for faster/slower rotation
+
+        camera.position.x = targetPoint.x + rotationRadius * Math.sin(rotationAngle);
+        camera.position.z = targetPoint.z + rotationRadius * Math.cos(rotationAngle);
+        camera.lookAt(targetPoint);
+
+
+    } else {
+
+        controls.update();
+
+    }
+
+}
+
+window.autoRotate = autoRotate;
+
+
+
 function animate() {
 
     dumpMachine();
@@ -810,12 +1148,17 @@ function animate() {
     renderer.setAnimationLoop(render);
 }
 
+
 function render(timeStamp, xrFrame) {
 
-    if(controls) {
-      controls.update();
+
+    freeFly();
+
+
+    // if(controls) {
+    //   controls.update();
     
-    }
+    // }
 
     if(stats) {
         stats.update()

@@ -3,6 +3,10 @@ import cv2
 import torch
 import logging
 import matplotlib.pyplot as plt
+
+import numpy as np
+import json
+
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory, jsonify
 
 logging.basicConfig(level=logging.DEBUG)
@@ -46,10 +50,57 @@ def resize_image(image_path, max_dimension=1920):
 
     return img
 
+def rgb_to_hex_format(rgb):
+    return "0x{:02x}{:02x}{:02x}".format(int(rgb[0]), int(rgb[1]), int(rgb[2]))
+
+
+def extract_colors(image_path, n_colors=32):
+    img = cv2.imread(image_path)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert to RGB color space
+    img = cv2.resize(img, (150, 150))  # optional, to reduce computation
+    
+    # Reshape the data
+    data = img.reshape((-1, 3))
+    
+    # Use KMeans from cv2 to get the dominant colors
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 200, 0.2)
+    _, labels, centers = cv2.kmeans(data.astype(np.float32), n_colors, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+
+    return centers.tolist()  # Convert numpy array to list
+
+
+# def extract_colors(image_path, n_colors=10):
+#     img = cv2.imread(image_path)
+#     img = cv2.resize(img, (150, 150))  # optional, to reduce computation
+#     img = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)  # Convert to LAB color space
+    
+#     # Reshape the data
+#     data = img.reshape((-1, 3))
+    
+#     # Use KMeans from cv2 to get the dominant colors
+#     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 200, 0.2)
+#     _, labels, centers = cv2.kmeans(data.astype(np.float32), n_colors, None, criteria, 10, cv2.KMEANS_PP_CENTERS)
+    
+#     centers = cv2.cvtColor(centers.reshape((1, n_colors, 3)), cv2.COLOR_LAB2BGR).reshape((n_colors, 3))
+
+#     return centers.tolist()  # Convert numpy array to list
+
+
+# def extract_colors(image_path, n_colors=10):
+#     img = cv2.imread(image_path)
+#     img = cv2.resize(img, (150, 150))  # optional, to reduce computation
+
+#     # Reshape the data
+#     data = img.reshape((-1, 3))
+
+#     # Use KMeans from cv2 to get the dominant colors
+#     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 200, 0.2)
+#     _, labels, centers = cv2.kmeans(data.astype(np.float32), n_colors, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+
+#     return centers.tolist()  # Convert numpy array to list
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 @app.route('/')
 def index():
@@ -105,7 +156,7 @@ def upload_file():
 
 
 
-def create_thumbnail(image_path, thumbnail_path, thumbnail_size=(128, 128)):
+def create_thumbnail(image_path, thumbnail_path, thumbnail_size=(256, 256)):
     """Creates a thumbnail of the image preserving its aspect ratio."""
     img = cv2.imread(image_path)
     
@@ -185,6 +236,18 @@ def process_image(filename):
     
     # Save the output as an image
     plt.imsave(os.path.join(app.config['OUTPUT_FOLDER'], "output_depthmap.jpg"), output)
+
+    # Extract colors and save to a JSON file
+
+    # colors = extract_colors(os.path.join(app.config['OUTPUT_FOLDER'], "output_depthmap.jpg"))
+    # hex_format_colors = [rgb_to_hex_format(color) for color in colors]
+    # with open(os.path.join(app.config['OUTPUT_FOLDER'], os.path.splitext(os.path.basename(filename))[0] + "_colors.json"), 'w') as json_file:
+    #     json.dump(hex_format_colors, json_file)
+    colors = extract_colors(filename)
+    hex_format_colors = [rgb_to_hex_format(color) for color in colors]
+    with open(os.path.join(app.config['OUTPUT_FOLDER'], os.path.splitext(os.path.basename(filename))[0] + "_colors.json"), 'w') as json_file:
+        json.dump(hex_format_colors, json_file)
+
 
 @app.route('/libs/<filename>')
 def libs_file(filename):
