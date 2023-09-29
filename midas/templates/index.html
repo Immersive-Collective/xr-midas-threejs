@@ -1267,16 +1267,24 @@ function loadGallery() {
         gallery.innerHTML = '';  // clear the gallery
         data.images.forEach(img => {
             let originalImg = img.replace('_th.', '.');  // get the name of the original image
+            let div = document.createElement('div');
+            div.classList.add("g-div");
+
             let imgElem = document.createElement('img');
             imgElem.src = "/uploads/" + img;  // set the src to the thumbnail
             imgElem.dataset.originalSrc = "/uploads/" + originalImg;  // store the original image src in a data attribute
-            imgElem.style.width = '100%';
-            //imgElem.classList.add("im");
-            imgElem.style.cursor = 'pointer';
-            imgElem.onclick = function() {
+            // imgElem.style.width = '100%';
+            // //imgElem.classList.add("im");
+            // imgElem.style.cursor = 'pointer';
+
+            //div.style.backgroundImage = 'url(path_to_your_image)';
+            div.style.backgroundImage = `url(${imgElem.src})` 
+            div.onclick = function() {
                 getGallery(imgElem.dataset.originalSrc);
             };
-            gallery.appendChild(imgElem);
+
+            //div.appendChild(imgElem)
+            gallery.appendChild(div);
         });
         document.getElementById('galleryOverlay').style.display = 'block';
     });
