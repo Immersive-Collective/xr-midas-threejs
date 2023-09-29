@@ -2,11 +2,29 @@ body {
     font-family: Helvetica, Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
+    background-color: #000000;
     color: #333;
     line-height: 1.6;
     font-size: 16px;
     user-select: none;
+}
+
+#main-body {
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 1.5s ease, visibility 0s ease;  /* Add transition for opacity and visibility */
+    background-color: #000000;
+}
+
+.visible {
+    visibility: visible;
+    opacity: 1; 
+}
+
+
+.visible {
+    visibility: visible;
+    opacity: 1; 
 }
 
 a, .custom-file-upload {

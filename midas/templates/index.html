@@ -8,7 +8,7 @@
 
 </head>
 
-<body>
+<body id="main-body">
 
 <script type="importmap">
 {
@@ -1299,6 +1299,9 @@ document.addEventListener("DOMContentLoaded", function() {
     RAPIER.init().then(() => {
         initRapier();
     });
+
+    document.getElementById("main-body").style.visibility = "visible";
+    document.getElementById("main-body").style.opacity = 1;
 
 
 });
