@@ -165,6 +165,9 @@ function saveCameraPosition() {
     let r = JSON.stringify(cameraPositions[cameraPositions.length-1])
     console.log(r)
 
+    window.autoRotate = true;
+
+
 }
 
 
@@ -198,13 +201,16 @@ function  animateCameraRandom() {
 let cameraTween, rotationTween, controlsTween;
 
 function animateCamera(id) {
+
+     window.autoRotate = false;
+
     let c = cameraPositionsData.cameraPosition[id].camera
     let t = cameraPositionsData.cameraPosition[id].controls
 
     // Save the tweens so we can terminate them later
     cameraTween = gsap.to(camera.position, { duration: 4, x: c.position.x, y: c.position.y, z: c.position.z });
     rotationTween = gsap.to(camera.rotation, { duration: 4, x: c.rotation.x, y: c.rotation.y, z: c.rotation.z });
-    controlsTween = gsap.to(controls.target, { duration: 4, x: t.target.x, y: t.target.y, z: t.target.z });
+    controlsTween = gsap.to(controls.target, { duration: 4, x: t.target.x, y: t.target.y, z: t.target.z, onComplete: () => { window.autoRotate = true} });
 }
 
 window.animateCamera = animateCamera;
@@ -551,13 +557,16 @@ function loadDepthImage(uploadedImageUrl, depthImageUrl) {
             const b = imgData.data[i + 2];
             heightData[j] = ((r + g + b) / 3) / 10;
         }
+        
         window.heightData = heightData;
+
         const textureLoader = new THREE.TextureLoader();
         
         textureLoader.load(uploadedImageUrl, function (texture) {
             
             makeMesh(texture);
-            loadPalette(depthImageUrl)
+            
+            loadPalette(depthImageUrl);
 
         });
 
@@ -926,6 +935,8 @@ function initScene() {
 
     });
 
+    lastTargetPoint = controls.target
+
 
     // LIGHTS
     scene.add(new THREE.HemisphereLight(0xFFFFFF, 0xeeeeff, 3.5));
@@ -1083,7 +1094,7 @@ function makeMesh(texture) {
     meshGroup.rotation.x = 1.15;
     addPhysics(meshGroup, geometry, 20, meshGroup.position, meshGroup.rotation, 1);
 
-
+    window.autoRotate = false;
     animateCameraRandom()
 
 }
@@ -1105,36 +1116,43 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-
-let autoRotate
-
-//let targetPoint = new THREE.Vector3(0, 0, 0);
+let autoRotate = true;
 let rotationAngle = 0;
 let rotationRadius = 100;
-
-//window.targetPoint = targetPoint
+let initializedFreeFly = false;
+let lastTargetPoint;
+let easingFactor = 0.00005;
+let maxRotationSpeed = 0.001; 
 
 function freeFly() {
-
 
     if(scene.getObjectByName("PAD") && window.autoRotate == true) {
 
         let targetPoint = scene.getObjectByName("PAD").position;
 
+        if (!initializedFreeFly) {
+            let dx = camera.position.x - targetPoint.x;
+            let dz = camera.position.z - targetPoint.z;
+            rotationRadius = Math.sqrt(dx * dx + dz * dz);
+            rotationAngle = Math.atan2(dx, dz);
+            easingFactor = 0.0001; // Reset easingFactor when freeFly is initialized
+            initializedFreeFly = true;
+        }
 
-        rotationAngle += 0.001; // Adjust the value for faster/slower rotation
+        rotationAngle += easingFactor;
+
+        // Gradually increase the easingFactor until it reaches maxRotationSpeed
+        easingFactor = Math.min(easingFactor + 0.00001, maxRotationSpeed); 
 
         camera.position.x = targetPoint.x + rotationRadius * Math.sin(rotationAngle);
         camera.position.z = targetPoint.z + rotationRadius * Math.cos(rotationAngle);
-        camera.lookAt(targetPoint);
 
+        camera.lookAt(lastTargetPoint);
 
     } else {
-
+        initializedFreeFly = false; // Reset for next time
         controls.update();
-
     }
-
 }
 
 window.autoRotate = autoRotate;
