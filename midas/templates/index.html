@@ -1080,8 +1080,17 @@ function makeMesh(texture) {
 
     const blackMaterial = new THREE.MeshBasicMaterial({
         color: 0x000000, 
-        side: THREE.BackSide
+        side: THREE.BackSide,
     });
+
+    const wireMaterial = new THREE.MeshBasicMaterial({
+        color: 0xFF57BC,
+        transparent: true,
+        opacity: 1, 
+        side: THREE.BackSide,
+        wireframe: true
+    });
+
 
     const offset = 0.03;  // You can adjust this value as necessary
 
@@ -1091,6 +1100,11 @@ function makeMesh(texture) {
     const blackMesh = new THREE.Mesh(geometry, blackMaterial);
     blackMesh.position.y -= offset;
     meshGroup.add(blackMesh);
+
+    const wireMesh = new THREE.Mesh(geometry, wireMaterial);
+    wireMesh.position.y -= offset+0.1;
+    meshGroup.add(wireMesh);
+
 
     window.meshGroup = meshGroup;
     meshGroup.position.set(0, 1.7, -42);

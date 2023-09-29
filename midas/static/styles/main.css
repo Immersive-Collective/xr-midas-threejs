@@ -9,6 +9,26 @@ body {
     user-select: none;
 }
 
+@keyframes pulsate {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05); 
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.pulsating-image {
+    animation: pulsate 0.2s infinite;
+    display: inline-block; /* Needed for transform to work properly */
+}
+
 #main-body {
     visibility: hidden;
     opacity: 0;
@@ -82,7 +102,7 @@ a:hover, .custom-file-upload:hover {
 }
 
 #galleryContainer {
-display: grid;
+    display: grid;
     gap: 10px;
     padding: 1rem;
     overflow-y: auto;
@@ -105,10 +125,12 @@ display: grid;
     height: auto;  /* This ensures the aspect ratio of the image is maintained */
     border-radius: 5px;
     opacity: 1;
+    transition: border-radius 1.5s ease, opacity 0s ease;  /* Add transition for opacity and visibility */
 }
 
 #galleryContainer img:hover {
     opacity: 0.75;
+    border-radius: 10px;
 }
 
 #galleryOverlay {
