@@ -86,7 +86,7 @@ display: grid;
     gap: 10px;
     padding: 1rem;
     overflow-y: auto;
-    height: auto;
+    height: 90vh;
     margin: 5% auto;
     max-width: 100%;
     box-sizing: border-box;
