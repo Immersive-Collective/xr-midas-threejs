@@ -1257,6 +1257,7 @@ function loadGallery() {
             imgElem.src = "/uploads/" + img;  // set the src to the thumbnail
             imgElem.dataset.originalSrc = "/uploads/" + originalImg;  // store the original image src in a data attribute
             imgElem.style.width = '100%';
+            //imgElem.classList.add("im");
             imgElem.style.cursor = 'pointer';
             imgElem.onclick = function() {
                 getGallery(imgElem.dataset.originalSrc);
@@ -1323,9 +1324,19 @@ document.addEventListener("DOMContentLoaded", function() {
     </form>
 
 </div>
+
 <div id="galleryOverlay">
     <div id="galleryContainer">
         <!-- Images will be loaded here from Flask -->
     </div>
 </div>
+
+
+
+
+</body>
+</html>
+
+
+
 
