@@ -1275,29 +1275,29 @@ function loadGallery() {
         let gallery = document.getElementById('galleryContainer');
         gallery.innerHTML = '';  // clear the gallery
         data.images.forEach(img => {
-            let originalImg = img.replace('_th.', '.');  // get the name of the original image
+            let originalImg = img.replace('_th.', '.'); 
             let div = document.createElement('div');
             div.classList.add("g-div");
+            
+            // Placeholder or loader style for the div while the image is loading
+            div.style.background = "linear-gradient(45deg, #f3f3f3, #ececec)"; 
 
-            let imgElem = document.createElement('img');
-            imgElem.src = "/uploads/" + img;  // set the src to the thumbnail
-            imgElem.dataset.originalSrc = "/uploads/" + originalImg;  // store the original image src in a data attribute
-            // imgElem.style.width = '100%';
-            // //imgElem.classList.add("im");
-            // imgElem.style.cursor = 'pointer';
-
-            //div.style.backgroundImage = 'url(path_to_your_image)';
-            div.style.backgroundImage = `url(${imgElem.src})` 
-            div.onclick = function() {
-                getGallery(imgElem.dataset.originalSrc);
+            // Load the image first using the Image object
+            let imageLoader = new Image();
+            imageLoader.src = "/uploads/" + img;
+            imageLoader.onload = function() {
+                div.style.backgroundImage = `url(${imageLoader.src})`;
             };
 
-            //div.appendChild(imgElem)
+            div.onclick = function() {
+                getGallery("/uploads/" + originalImg);
+            };
             gallery.appendChild(div);
         });
         document.getElementById('galleryOverlay').style.display = 'block';
     });
 }
+
 
 
 
