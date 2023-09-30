@@ -1280,13 +1280,15 @@ function loadGallery() {
             div.classList.add("g-div");
             
             // Placeholder or loader style for the div while the image is loading
-            div.style.background = "linear-gradient(45deg, #f3f3f3, #ececec)"; 
+            div.style.background = "linear-gradient(90deg, rgba(0,0,0,0.25), rgba(0,0,0,0.5))"; 
+            div.style.border = "1px solid rgba(255,255,255,0.75)"
 
             // Load the image first using the Image object
             let imageLoader = new Image();
             imageLoader.src = "/uploads/" + img;
             imageLoader.onload = function() {
                 div.style.backgroundImage = `url(${imageLoader.src})`;
+                div.style.border = "1px solid rgba(0,0,0,0.75)"
             };
 
             div.onclick = function() {

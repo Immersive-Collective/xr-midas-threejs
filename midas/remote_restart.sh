@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#bash: ssh username@remote_server_ip 'bash -s' < /path_to/manage_gunicorn.sh
+
 SCREEN_NAME="gunicorn_screen"
 
 # Check if the screen session exists
