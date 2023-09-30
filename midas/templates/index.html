@@ -1277,18 +1277,31 @@ function loadGallery() {
         data.images.forEach(img => {
             let originalImg = img.replace('_th.', '.'); 
             let div = document.createElement('div');
-            div.classList.add("g-div");
+            div.classList.add("g-div-before");
             
             // Placeholder or loader style for the div while the image is loading
-            div.style.background = "linear-gradient(90deg, rgba(0,0,0,0.25), rgba(0,0,0,0.5))"; 
-            div.style.border = "1px solid rgba(255,255,255,0.75)"
+            // div.style.background = "linear-gradient(90deg, rgba(0,0,0,0.25), rgba(0,0,0,0.5))"; 
+            // div.style.borderRadius = '10px';
+            // div.style.backgroundSize = 'cover';
+            // div.style.backgroundPosition = 'center';
+            // div.style.margin = '0.3em';
+            // div.style.width = '100%';
+            // div.style.display = 'inline-block';
+            // div.style.opacity = '0.9';
+            // div.style.transform = 'scale(1.0)';
+            // div.style.transition = 'transform 0.15s ease';
+
+            // div.style.border = "1px solid rgba(255,255,255,0.75)"
 
             // Load the image first using the Image object
             let imageLoader = new Image();
             imageLoader.src = "/uploads/" + img;
             imageLoader.onload = function() {
+                div.classList.remove("g-div-before");
+                div.classList.add("g-div");
                 div.style.backgroundImage = `url(${imageLoader.src})`;
-                div.style.border = "1px solid rgba(0,0,0,0.75)"
+
+                // div.style.border = "1px solid rgba(0,0,0,0.75)"
             };
 
             div.onclick = function() {
