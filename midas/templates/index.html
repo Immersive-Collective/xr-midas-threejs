@@ -397,6 +397,15 @@ if (event.keyCode === 32) {
   }
 })
 
+document.getElementById('galleryContainer').addEventListener('wheel', function(e) {
+    if (e.deltaY !== 0) {
+        // Multiply e.deltaY by any desired pixel amount, it's a factor to determine speed
+        this.scrollLeft += e.deltaY * 2;
+        console.log(e)
+        e.preventDefault(); // prevent default vertical scroll
+    }
+});
+
 function logEvents() {
     // window.eventQueue.drainCollisionEvents((handle1, handle2, started) => {
     //     //console.log("Inside drainCollisionEvents. Handle1:", handle1, "Handle2:", handle2, "Started:", started);

@@ -37,7 +37,7 @@ body {
 #main-body {
     visibility: hidden;
     opacity: 0;
-    transition: opacity 1.5s ease, visibility 0s ease;  /* Add transition for opacity and visibility */
+    transition: opacity 1.5s ease, visibility 0s ease;
     background-color: #000000;
 }
 
@@ -114,6 +114,7 @@ body.overflow-hidden {
 }
 
 #galleryOverlay {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -139,6 +140,9 @@ body.overflow-hidden {
   height: 10em;
   width: 100%;
   display: inline-block;
+  opacity: 0.9;
+  transform: scale(1.0);
+  transition: transform 0.15s ease;
 }
 
 .g-div:nth-child(2n) {
@@ -161,31 +165,10 @@ body.overflow-hidden {
     height: 20em;
 }
 
-
-/*@media (min-width: 340px) { 
-
-    #galleryContainer {
-        column-width: 10em;
-    }
-
+.g-div:hover {
+    opacity: 1;
+    transform: scale(1.05);    
 }
-
-@media (min-width: 600px) {
-
-    #galleryContainer {
-        column-width: 20em;
-    }
-
-}
-
-@media (min-width: 900px) {
-
-    #galleryContainer {
-        column-width: 20em;
-    }
-
-
-}*/
 
 
 #file-upload-link {
