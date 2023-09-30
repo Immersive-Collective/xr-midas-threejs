@@ -1,20 +1,21 @@
 #!/bin/bash
 
-# Find the gunicorn process ID
-PID=$(ps aux | grep 'gunicorn app:app' | grep -v 'grep' | awk '{print $2}')
+SCREEN_NAME="gunicorn_screen"
 
-# If PID is not empty, kill it
-if [ ! -z "$PID" ]; then
-    echo "Stopping gunicorn process with PID: $PID"
-    kill -TERM $PID
-    # Wait a few seconds to ensure the process stops
-    sleep 5
+# Check if the screen session exists
+screen -list | grep "$SCREEN_NAME"
+if [ $? -eq 0 ]; then
+    echo "Screen session found. Sending commands to terminate and restart gunicorn."
+
+    # Send Ctrl+C to terminate gunicorn
+    screen -S "$SCREEN_NAME" -X stuff '^C'
+    sleep 2
+
+    # Send command to restart gunicorn
+    screen -S "$SCREEN_NAME" -X stuff 'gunicorn app:app\n'
 else
-    echo "No gunicorn process found to stop"
+    echo "No screen session named $SCREEN_NAME found. Starting a new one."
+    screen -S "$SCREEN_NAME" -dm bash -c 'gunicorn app:app'
 fi
-
-# Start gunicorn again
-echo "Starting gunicorn..."
-gunicorn app:app
 
 echo "Done."
