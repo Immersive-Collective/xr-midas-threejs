@@ -1335,6 +1335,14 @@ function render(timeStamp, xrFrame) {
     renderer.render(scene, camera);
 }
 
+function stripUID(url) {
+    //var url = 'http://127.0.0.1:5050/share/c4f81e2d-901a-4101-a801-74a463c0f334/#';
+    let regex = /share\/([a-f0-9\-]+)/;
+    let match = url.match(regex);
+    let uid = match ? match[1] : null;
+    return uid;
+}
+
 
 function handleUploadFormSubmission(e) {
     closeGallery();
@@ -1345,10 +1353,15 @@ function handleUploadFormSubmission(e) {
     })
     .then(response => response.json())
     .then(data => {
+        
         console.log("data", data)
+
         // Display the images
         document.getElementById('depth-image').src = `${data.depth_image_url}`
         // Initialize ThreeJS
+        window.currentUID = stripUID(data.shareable_link);
+        history.pushState("recentShare", "", returnShareURL());
+                
         initializeThreeJS(data.image_url, data.depth_image_url);
         document.getElementById('depth-image').classList.remove('pulsating-image');
     })
