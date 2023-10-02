@@ -980,7 +980,7 @@ function initScene() {
     scene = new THREE.Scene();
     window.scene = scene;
 
-    let skyboxPath = "{{ url_for('static', filename='images/skyboxes/x6') }}";
+    let skyboxPath = "{{ url_for('static', filename='images/skyboxes/x5') }}";
     textureCube = loadSkyboxTexture(skyboxPath,"png");
 
     renderer = new THREE.WebGLRenderer({ antialias: true, xrCompatible: true });
