@@ -287,95 +287,6 @@ def outputed_file(filename):
 def uploaded_file(filename):
     return send_from_directory(os.path.abspath(app.config['UPLOAD_FOLDER']), filename)
 
-# @app.route('/get-images')
-# def get_images():
-#     files = os.listdir(app.config['UPLOAD_FOLDER'])
-    
-#     # Filter only thumbnails and allowed extensions
-#     files = [file for file in files 
-#              if file.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS 
-#              and file.rsplit('.', 2)[0].endswith('_th')]
-    
-#     image_list = []
-#     for file in files:
-#         try:
-#             with open(os.path.join(app.config['UPLOAD_FOLDER'], file), 'r', encoding='utf-8') as json_file:
-#                 data = json.load(json_file)
-#                 image_list.append(data)
-#         except (UnicodeDecodeError, json.JSONDecodeError):
-#             print(f"Error reading or decoding {file}.")
-            
-#     return jsonify({"images": image_list})
-
-# @app.route('/get-images')
-# def get_images():
-#     files = os.listdir(app.config['UPLOAD_FOLDER'])
-    
-#     # Filter only the main images and allowed extensions (skip thumbnails)
-#     files = [file for file in files 
-#              if file.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS 
-#              and not file.rsplit('.', 2)[0].endswith('_th')]
-    
-#     image_list = []
-#     for file in files:
-#         json_path = os.path.join(app.config['UPLOAD_FOLDER'], file.rsplit('.', 1)[0] + ".json")
-#         if os.path.exists(json_path):
-#             try:
-#                 with open(json_path, 'r', encoding='utf-8') as json_file:
-#                     data = json.load(json_file)
-#                     image_list.append(data['original_filename'])
-#             except Exception as e:
-#                 print(f"Error reading or decoding {json_path}: {str(e)}")
-                
-#     return jsonify({"images": image_list})
-
-
-
-# @app.route('/get-images')
-# def get_images():
-#     thumbnail_files = os.listdir(app.config['UPLOAD_FOLDER'])
-    
-#     # Filter only thumbnails and allowed extensions
-#     thumbnail_files = [file for file in thumbnail_files 
-#                        if file.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS 
-#                        and file.rsplit('.', 2)[0].endswith('_th')]
-    
-#     # Create a mapping from original file name to its UUID
-#     uuid_mapping = {}
-#     for json_file_name in os.listdir(app.config['SHARE_FOLDER']):
-#         json_path = os.path.join(app.config['SHARE_FOLDER'], json_file_name)
-#         with open(json_path, 'r') as json_file:
-#             data = json.load(json_file)
-#             original_filename = data.get('original_filename', '')
-#             uuid_value = os.path.splitext(json_file_name)[0]  # Remove .json from file name to get UUID
-#             uuid_mapping[original_filename] = uuid_value
-
-#     # Create a list of image data dictionaries with thumbnail names and UUIDs
-#     images_data = []
-#     for thumbnail in thumbnail_files:
-#         original_filename = thumbnail.replace('_th.', '.')
-#         uuid_value = uuid_mapping.get(original_filename)
-#         if uuid_value:  # Only include if UUID exists
-#             images_data.append({
-#                 'thumbnail': thumbnail,
-#                 'uuid': uuid_value
-#             })
-
-#     return jsonify({"images": images_data})
-
-
-# @app.route('/get-images')
-# def get_images():
-#     files = os.listdir(app.config['UPLOAD_FOLDER'])
-    
-#     # Filter only thumbnails and allowed extensions
-#     files = [file for file in files 
-#              if file.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS 
-#              and file.rsplit('.', 2)[0].endswith('_th')]
-    
-#     return jsonify({"images": files})
-
-
 @app.route('/get-images')
 def get_images():
     share_folder = 'share'  # Assuming your share folder is named 'share'
@@ -398,8 +309,6 @@ def get_images():
     return jsonify({"images": image_list})
 
 
-
-
 @app.route('/share/<uuid>')
 def share_image(uuid):
     try:
@@ -408,6 +317,11 @@ def share_image(uuid):
         return jsonify(data)
     except:
         return jsonify({"error": "Invalid UUID"}), 400
+
+
+@app.route('/image/<string:uid>')
+def share_by_uid(uid):
+    return render_template('index.html', uid=uid)        
 
  
 if __name__ == '__main__':

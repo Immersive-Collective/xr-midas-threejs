@@ -80,6 +80,9 @@ const clock = new THREE.Clock();
 let groundHeight = 0;
 let eventQueue;
 
+let currentUID = "54BF8B68-B4AE-47B0-960B-560EDEAF4671";
+window.currentUID = currentUID;
+
 window.myRapierWorld
 window.rigidBodies = window.rigidBodies || [];
 window.threeCubes = window.threeCubes || [];
@@ -134,9 +137,7 @@ async function initRapier() {
             }
         })
 
-
-        setTimeout(() => { getImage('/uploads/00136-2039960348.png') }, 2000)
-
+        checkURL()
 
         animate();
 
@@ -1413,9 +1414,6 @@ function loadGallery() {
             div.data = imgObj;
             div.classList.add("g-div-before");
             
-            // Placeholder or loader style for the div while the image is loading
-            // ... (your existing styles)
-
             // Load the image first using the Image object
             let imageLoader = new Image();
             imageLoader.src = "/uploads/" + thumbnailImg;
@@ -1429,6 +1427,7 @@ function loadGallery() {
 
             div.onclick = function() {
                 //getImage("/uploads/" + originalImg);
+                window.currentUID = this.data.uid;
                 fetchAndDisplayImageByUUID(this.data.uid)
 
             };
@@ -1440,60 +1439,15 @@ function loadGallery() {
     });
 }
 
+function checkURL() {
+    const currentURL = new URL(window.location.href);
+    const pathSegments = currentURL.pathname.split('/');
+    let uid = "{{ uid }}"
+    console.log("uid",uid);
 
-// function loadGallery() {
-//     fetch("/get-images")
-//     .then(response => response.json())
-//     .then(data => {
-
-//         console.log("data", data)
-
-//         let gallery = document.getElementById('galleryContainer');
-//         gallery.innerHTML = '';  // clear the gallery
-//         data.images.forEach(img => {
-
-//             console.log(img.file)
-
-
-//             let originalImg = img.file.replace('_th.', '.'); 
-//             let div = document.createElement('div');
-//             div.classList.add("g-div-before");
-            
-//             // Placeholder or loader style for the div while the image is loading
-//             // div.style.background = "linear-gradient(90deg, rgba(0,0,0,0.25), rgba(0,0,0,0.5))"; 
-//             // div.style.borderRadius = '10px';
-//             // div.style.backgroundSize = 'cover';
-//             // div.style.backgroundPosition = 'center';
-//             // div.style.margin = '0.3em';
-//             // div.style.width = '100%';
-//             // div.style.display = 'inline-block';
-//             // div.style.opacity = '0.9';
-//             // div.style.transform = 'scale(1.0)';
-//             // div.style.transition = 'transform 0.15s ease';
-
-//             // div.style.border = "1px solid rgba(255,255,255,0.75)"
-
-//             // Load the image first using the Image object
-//             let imageLoader = new Image();
-//             imageLoader.src = "/uploads/" + img;
-//             imageLoader.onload = function() {
-//                 div.classList.remove("g-div-before");
-//                 div.classList.add("g-div");
-//                 div.style.backgroundImage = `url(${imageLoader.src})`;
-
-//                 // div.style.border = "1px solid rgba(0,0,0,0.75)"
-//             };
-
-//             div.onclick = function() {
-//                 getImage("/uploads/" + originalImg);
-//             };
-//             gallery.appendChild(div);
-
-
-//         });
-//         document.getElementById('galleryOverlay').style.display = 'block';
-//     });
-// }
+    //window.currentUID = uid;
+    fetchAndDisplayImageByUUID(uid);
+}
 
 
 function fetchAndDisplayImageByUUID(uuid) {
@@ -1502,6 +1456,8 @@ function fetchAndDisplayImageByUUID(uuid) {
     .then(data => {
         const originalUrl = "/uploads/" + data.original_filename;
         getImage(originalUrl);
+        window.currentUID = uuid;
+        history.pushState("recentShare", "", returnShareURL());
     })
     .catch(error => {
         console.error("Error fetching image by UUID:", error);
@@ -1516,7 +1472,7 @@ function getImage(originalUrl) {
     // Since all depth images are in .jpg format
     let depth_image = originalUrl.replace(/(.*\/)uploads(\/[^\/]+)\.[^\.]+$/, `$1outputs$2_depth.jpg`);
     
-    console.log("depth_image =>", depth_image)
+    console.log("depth_image =>", depth_image);
     
     document.getElementById('galleryOverlay').style.display = 'none';
     document.getElementById('depth-image').src = depth_image;
@@ -1548,26 +1504,38 @@ document.addEventListener("DOMContentLoaded", function() {
 
 });
 
+
+function returnShareURL() {
+    const parsedURL = new URL(window.location.href);
+    const domainAndPort = `${parsedURL.protocol}//${parsedURL.host}`;
+    return domainAndPort+'/image/'+window.currentUID
+}
+
+
 document.getElementById('share-link').addEventListener('click', function() {
+
+    const shareURL = returnShareURL() 
+
     if (navigator.share) {
         // Web Share API is supported
         navigator.share({
-            title: 'Title of the content',
-            text: 'Description or text of the content',
-            url: window.location.href, // Or any other URL you'd like to share
+            title: 'Immersive Photos',
+            text: 'This is amazing 2.5D immersive photo',
+            url: shareURL, // Or any other URL you'd like to share
         }).then(() => {
             console.log('Thanks for sharing!');
         }).catch(console.error);
     } else {
         // Fallback for browsers that don't support the Web Share API
         const textArea = document.createElement('textarea');
-        textArea.value = window.location.href; // Or any other URL you'd like to share
+        textArea.value = shareURL; // Or any other URL you'd like to share
         document.body.appendChild(textArea);
         textArea.select();
         document.execCommand('copy');
         document.body.removeChild(textArea);
-        alert('URL copied to clipboard!');
+        alert(`URL ${shareURL} copied to clipboard!`);
     }
+
 });
 
 
