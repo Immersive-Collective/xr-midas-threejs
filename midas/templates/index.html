@@ -972,11 +972,6 @@ function createExtendedCrossMesh(size, material) {
 
 
 
-
-
-
-
-
 function initScene() {
 
     console.log("initScene");
@@ -1440,12 +1435,17 @@ function loadGallery() {
 }
 
 function checkURL() {
+
     const currentURL = new URL(window.location.href);
     const pathSegments = currentURL.pathname.split('/');
-    let uid = "{{ uid }}"
-    console.log("uid",uid);
-
-    //window.currentUID = uid;
+    let uid = "{{ uid }}";
+    
+    if(uid == "") {
+        console.log("uid undefined")
+        uid = window.currentUID;
+    } else {
+        window.currentUID = uid;
+    }
     fetchAndDisplayImageByUUID(uid);
 }
 
