@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 import json
+import uuid
+
 
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory, jsonify
 
@@ -22,8 +24,23 @@ LIBS_FOLDER = 'libs'
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'heic', 'bmp', 'hdr'}
 
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
+
+OUTPUT_FOLDER = os.path.join(BASE_DIR, 'outputs')
 app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
+if not os.path.exists(app.config['OUTPUT_FOLDER']):
+    os.makedirs(app.config['OUTPUT_FOLDER'])
+
+SHARE_FOLDER = os.path.join(BASE_DIR, 'share')
+app.config['SHARE_FOLDER'] = SHARE_FOLDER
+if not os.path.exists(app.config['SHARE_FOLDER']):
+    os.makedirs(app.config['SHARE_FOLDER'])
+
 
 def resize_image(image_path, max_dimension=1920):
     """Resizes the image while maintaining the aspect ratio with a maximum width or height."""
@@ -147,9 +164,18 @@ def upload_file():
         depth_filename = os.path.join(app.config['OUTPUT_FOLDER'], os.path.splitext(basename)[0] + "_depth.jpg")
         os.rename(os.path.join(app.config['OUTPUT_FOLDER'], "output_depthmap.jpg"), depth_filename)
 
+        # Create UUID and save information
+        image_uuid = str(uuid.uuid4())
+        share_info = {"original_filename": basename}
+        with open(os.path.join(app.config['SHARE_FOLDER'], image_uuid + ".json"), 'w') as json_file:
+            json.dump(share_info, json_file)
+
+        shareable_link = url_for('share_image', uuid=image_uuid, _external=True)
+
         return jsonify({
             "image_url": url_for('uploaded_file', filename=basename),
-            "depth_image_url": url_for('outputed_file', filename=os.path.basename(depth_filename))
+            "depth_image_url": url_for('outputed_file', filename=os.path.basename(depth_filename)),
+            "shareable_link": shareable_link
         })
 
     return jsonify({"error": "File type not allowed"}), 400
@@ -261,18 +287,129 @@ def outputed_file(filename):
 def uploaded_file(filename):
     return send_from_directory(os.path.abspath(app.config['UPLOAD_FOLDER']), filename)
 
+# @app.route('/get-images')
+# def get_images():
+#     files = os.listdir(app.config['UPLOAD_FOLDER'])
+    
+#     # Filter only thumbnails and allowed extensions
+#     files = [file for file in files 
+#              if file.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS 
+#              and file.rsplit('.', 2)[0].endswith('_th')]
+    
+#     image_list = []
+#     for file in files:
+#         try:
+#             with open(os.path.join(app.config['UPLOAD_FOLDER'], file), 'r', encoding='utf-8') as json_file:
+#                 data = json.load(json_file)
+#                 image_list.append(data)
+#         except (UnicodeDecodeError, json.JSONDecodeError):
+#             print(f"Error reading or decoding {file}.")
+            
+#     return jsonify({"images": image_list})
+
+# @app.route('/get-images')
+# def get_images():
+#     files = os.listdir(app.config['UPLOAD_FOLDER'])
+    
+#     # Filter only the main images and allowed extensions (skip thumbnails)
+#     files = [file for file in files 
+#              if file.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS 
+#              and not file.rsplit('.', 2)[0].endswith('_th')]
+    
+#     image_list = []
+#     for file in files:
+#         json_path = os.path.join(app.config['UPLOAD_FOLDER'], file.rsplit('.', 1)[0] + ".json")
+#         if os.path.exists(json_path):
+#             try:
+#                 with open(json_path, 'r', encoding='utf-8') as json_file:
+#                     data = json.load(json_file)
+#                     image_list.append(data['original_filename'])
+#             except Exception as e:
+#                 print(f"Error reading or decoding {json_path}: {str(e)}")
+                
+#     return jsonify({"images": image_list})
+
+
+
+# @app.route('/get-images')
+# def get_images():
+#     thumbnail_files = os.listdir(app.config['UPLOAD_FOLDER'])
+    
+#     # Filter only thumbnails and allowed extensions
+#     thumbnail_files = [file for file in thumbnail_files 
+#                        if file.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS 
+#                        and file.rsplit('.', 2)[0].endswith('_th')]
+    
+#     # Create a mapping from original file name to its UUID
+#     uuid_mapping = {}
+#     for json_file_name in os.listdir(app.config['SHARE_FOLDER']):
+#         json_path = os.path.join(app.config['SHARE_FOLDER'], json_file_name)
+#         with open(json_path, 'r') as json_file:
+#             data = json.load(json_file)
+#             original_filename = data.get('original_filename', '')
+#             uuid_value = os.path.splitext(json_file_name)[0]  # Remove .json from file name to get UUID
+#             uuid_mapping[original_filename] = uuid_value
+
+#     # Create a list of image data dictionaries with thumbnail names and UUIDs
+#     images_data = []
+#     for thumbnail in thumbnail_files:
+#         original_filename = thumbnail.replace('_th.', '.')
+#         uuid_value = uuid_mapping.get(original_filename)
+#         if uuid_value:  # Only include if UUID exists
+#             images_data.append({
+#                 'thumbnail': thumbnail,
+#                 'uuid': uuid_value
+#             })
+
+#     return jsonify({"images": images_data})
+
+
+# @app.route('/get-images')
+# def get_images():
+#     files = os.listdir(app.config['UPLOAD_FOLDER'])
+    
+#     # Filter only thumbnails and allowed extensions
+#     files = [file for file in files 
+#              if file.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS 
+#              and file.rsplit('.', 2)[0].endswith('_th')]
+    
+#     return jsonify({"images": files})
+
+
 @app.route('/get-images')
 def get_images():
-    files = os.listdir(app.config['UPLOAD_FOLDER'])
-    
-    # Filter only thumbnails and allowed extensions
-    files = [file for file in files 
-             if file.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS 
-             and file.rsplit('.', 2)[0].endswith('_th')]
-    
-    return jsonify({"images": files})
- 
+    share_folder = 'share'  # Assuming your share folder is named 'share'
+    json_files = [f for f in os.listdir(share_folder) if f.endswith('.json')]
 
+    image_list = []
+
+    for json_filename in json_files:
+        json_path = os.path.join(share_folder, json_filename)
+        try:
+            with open(json_path, 'r', encoding='utf-8') as json_file:
+                data = json.load(json_file)
+                image_list.append({
+                    "file": data['original_filename'],
+                    "uid": json_filename.rsplit('.', 1)[0]  # remove .json extension to get UID
+                })
+        except Exception as e:
+            print(f"Error reading or decoding {json_path}: {str(e)}")
+
+    return jsonify({"images": image_list})
+
+
+
+
+@app.route('/share/<uuid>')
+def share_image(uuid):
+    try:
+        with open(os.path.join(app.config['SHARE_FOLDER'], uuid + ".json"), 'r') as json_file:
+            data = json.load(json_file)
+        return jsonify(data)
+    except:
+        return jsonify({"error": "Invalid UUID"}), 400
+
+ 
 if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)

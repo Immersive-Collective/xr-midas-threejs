@@ -79,6 +79,20 @@ a:hover, .custom-file-upload:hover {
     opacity: 0.75;
 }
 
+#share-link-icon {
+    width: 22px;
+    height: 22px;
+}
+
+
+#share-link {
+    cursor: pointer;
+    position: fixed;
+    bottom: 50%;
+    right: 1rem;
+    opacity: 0.75;
+}
+
 #ui {
     position: absolute;
     left: 0;
