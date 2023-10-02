@@ -1361,7 +1361,7 @@ function handleUploadFormSubmission(e) {
         // Initialize ThreeJS
         window.currentUID = stripUID(data.shareable_link);
         history.pushState("recentShare", "", returnShareURL());
-                
+
         initializeThreeJS(data.image_url, data.depth_image_url);
         document.getElementById('depth-image').classList.remove('pulsating-image');
     })
@@ -1533,7 +1533,7 @@ document.getElementById('share-link').addEventListener('click', function() {
         // Web Share API is supported
         navigator.share({
             title: 'Immersive Photos',
-            text: 'Immersive experience for you '+shareURL,
+            text: 'Immersive experience for you: ',
             url: shareURL, // Or any other URL you'd like to share
         }).then(() => {
             console.log('Thanks for sharing!');
