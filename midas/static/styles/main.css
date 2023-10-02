@@ -76,7 +76,12 @@ a:hover, .custom-file-upload:hover {
     position: fixed;
     bottom: 1rem;
     left: 1rem;
+    transition: opacity 0.15s ease;    
     opacity: 0.75;
+}
+
+#github-link:hover {
+    opacity: 1;
 }
 
 #share-link-icon {
@@ -90,7 +95,12 @@ a:hover, .custom-file-upload:hover {
     position: fixed;
     bottom: 50%;
     right: 1rem;
+    transition: opacity 0.15s ease;    
     opacity: 0.75;
+}
+
+#share-link:hover {
+    opacity: 1;
 }
 
 #ui {
