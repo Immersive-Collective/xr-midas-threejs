@@ -1,3 +1,5 @@
+
+share/
 certs/
 
 *.pem
@@ -11,6 +13,7 @@ design/
 
 outputs/
 uploads/
+share/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

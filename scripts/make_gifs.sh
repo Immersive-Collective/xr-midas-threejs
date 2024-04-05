@@ -15,7 +15,8 @@ echo "MAKING GIFs: $NAME" &&
 # ffmpeg -ss 0 -t 10 -i $NAME -i palette.png -filter_complex "fps=24,scale=728:-1:flags=lanczos[x];[x][1:v]paletteuse" -loop 1 ${filename}_LOOP1.gif &&
 # ffmpeg -ss 0 -t 10 -i $NAME -i palette.png -filter_complex "fps=24,scale=728:-1:flags=lanczos[x];[x][1:v]paletteuse" -loop 2 ${filename}_LOOP2.gif &&
 # ffmpeg -ss 0 -t 10 -i $NAME -i palette.png -filter_complex "fps=24,scale=728:-1:flags=lanczos[x];[x][1:v]paletteuse" -loop -1 ${filename}_NOLOOP.gif &&
-ffmpeg -ss 0 -t 10 -i $NAME -i palette.png -filter_complex "fps=30,scale=1024:-1:flags=lanczos[x];[x][1:v]paletteuse" -loop 0 ${filename}_LOOP_FOREVER.gif &&
+# ffmpeg -ss 0 -t 10 -i $NAME -i palette.png -filter_complex "fps=30,scale=1024:-1:flags=lanczos[x];[x][1:v]paletteuse" -loop 0 ${filename}_LOOP_FOREVER.gif &&
+ffmpeg -ss 0 -t 10 -i $NAME -i palette.png -filter_complex "fps=24:-1:flags=lanczos[x];[x][1:v]paletteuse" -loop 0 ${filename}_LOOP_FOREVER.gif &&
 
 echo "GENERATING HTML PAGE"
 
