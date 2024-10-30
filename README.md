@@ -8,7 +8,7 @@ https://github.com/Immersive-Collective/xr-midas-threejs/assets/27820237/cac396c
 
 
 # Live Demo
-https://metaboy.tech:5050/
+https://sylwester.tech:5050/
 
 Welcome to the XR 2.5 project. This application is an integration of Flask, a lightweight Python web framework, and Three.js, a popular JavaScript library for 3D graphics. The project lets users upload images which are then processed and rendered using Three.js in a virtual environment.
 
